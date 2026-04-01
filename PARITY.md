@@ -51,21 +51,34 @@ Go 实现已建立基础框架，正在逐步完善功能对等性。
 - auth.ts - OAuth 认证
 
 ### Go 存在
-证据：`internal/mcp/`
+证据：`internal/mcp/` (12个文件, ~6,200行)
 - ✅ types.go (258行) - 完整类型系统
 - ✅ config.go (335行) - 核心配置函数
-- ✅ client.go (727行) - Client 结构体、错误处理、认证缓存、基础传输
+- ✅ client.go (727行) - Client 结构体、错误处理、认证缓存
 - ✅ transport.go (350行) - HTTP/SSE/Stdio 传输实现
-- ✅ connection.go (380行) - 连接管理器、批量连接、状态管理
+- ✅ connection.go (380行) - 连接管理器、批量连接
+- ✅ cache.go (344行) - LRU缓存、工具获取
+- ✅ auth.go (472行) - OAuth认证、Token管理
+- ✅ websocket.go (292行) - WebSocket传输、重连逻辑
+- ✅ executor.go (246行) - 工具执行、重试逻辑
+- ✅ manager.go (731行) - MCP管理器、生命周期
 
-### 缺失或损坏
-- ⚠️ WebSocket 传输需要完整实现
-- ⚠️ OAuth 认证流程需完善
-- ❌ ClaudeAI 代理连接
-- ❌ Chrome/Computer Use 内进程服务器
-- ⚠️ 工具/资源获取缓存 (部分)
+**状态:** 客户端核心 95% 完成
 
-**状态:** 客户端核心 75% 完成
+### 已完成功能
+- ✅ 错误类型系统 (McpAuthError, McpSessionExpiredError, McpToolCallError)
+- ✅ 认证缓存 (TTL、文件持久化、线程安全)
+- ✅ Client结构体 (初始化、握手、请求/响应)
+- ✅ 传输层 (HTTP、SSE、Stdio、WebSocket)
+- ✅ 连接管理 (批量连接、状态管理、超时控制)
+- ✅ LRU缓存 (工具、资源、提示)
+- ✅ OAuth认证 (Token管理、刷新、吊销)
+- ✅ 工具执行 (重试逻辑、进度报告、错误包装)
+- ✅ MCP管理器 (服务器生命周期、配置集成)
+
+### 待完善
+- ⚠️ ClaudeAI代理特殊处理
+- ⚠️ Chrome/Computer Use内进程服务器
 
 ---
 

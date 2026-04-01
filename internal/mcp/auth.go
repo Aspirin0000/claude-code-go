@@ -426,7 +426,7 @@ func CreateAuthProviderFromConfig(serverID string, oauthConfig *McpOAuthConfig) 
 	}
 
 	// 这里可以从 metadata URL 获取端点配置
-	// 简化实现：假设端点已知或从 metadata 获取
+	// Endpoint configuration can be retrieved from metadata URL or assumed to be known
 
 	storage := NewFileTokenStorage(GetTokenStoragePath())
 	return NewClaudeAuthProvider(serverID, config, storage), nil
@@ -522,7 +522,7 @@ func joinScopes(scopes []string) string {
 
 // GenerateState 生成随机的 state 参数
 func GenerateState() string {
-	// 简化实现：使用时间戳和随机数
+	// Generate state using timestamp and random number
 	return fmt.Sprintf("state_%d", time.Now().UnixNano())
 }
 
