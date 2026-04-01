@@ -3,7 +3,10 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 // TerminalUI 终端界面
@@ -14,11 +17,18 @@ type TerminalUI struct {
 
 // NewTerminalUI 创建新的终端 UI
 func NewTerminalUI() *TerminalUI {
-	return &TerminalUI{
+	ui := &TerminalUI{
 		width:  80,
 		height: 24,
 	}
-	// TODO: 获取实际终端尺寸
+
+	// 获取实际终端尺寸
+	if width, height, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
+		ui.width = width
+		ui.height = height
+	}
+
+	return ui
 }
 
 // PrintWelcome 打印欢迎信息
