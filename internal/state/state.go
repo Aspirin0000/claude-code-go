@@ -61,6 +61,14 @@ func (s *AppState) ClearMessages() {
 	s.Messages = make([]Message, 0)
 }
 
+// SetMessages 设置消息列表（用于压缩等操作）
+func (s *AppState) SetMessages(messages []Message) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Messages = make([]Message, len(messages))
+	copy(s.Messages, messages)
+}
+
 // SetSessionID 设置会话 ID
 func (s *AppState) SetSessionID(id string) {
 	s.mu.Lock()
