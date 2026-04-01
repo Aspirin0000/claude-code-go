@@ -309,24 +309,165 @@ func UrlMatchesPattern(url, pattern string) bool {
 // 策略检查（第301-600行）
 // ============================================================================
 
+// GetMcpAllowlistSettings 获取 MCP 允许列表设置
+// 对应 TS: function getMcpAllowlistSettings()
+// 行: 341-346
+func GetMcpAllowlistSettings() *settings.SettingsJson {
+	if settings.ShouldAllowManagedMcpServersOnly() {
+		return settings.GetSettingsForSource(settings.SettingSourcePolicy)
+	}
+	return settings.GetInitialSettings()
+}
+
+// GetMcpDenylistSettings 获取 MCP 拒绝列表设置
+// 对应 TS: function getMcpDenylistSettings()
+// 行: 353-355
+func GetMcpDenylistSettings() *settings.SettingsJson {
+	return settings.GetInitialSettings()
+}
+
+// IsMcpServerDenied 检查服务器是否被策略拒绝
+// 对应 TS: function isMcpServerDenied(...)
+// 行: 364-408
+func IsMcpServerDenied(serverName string, config *McpServerConfig) bool {
+	s := GetMcpDenylistSettings()
+	if s == nil || len(s.DeniedMcpServers) == 0 {
+		return false // No restrictions
+	}
+
+	// Check name-based denial
+	for _, entry := range s.DeniedMcpServers {
+		if settings.IsMcpServerNameEntry(entry) && entry.ServerName != nil && *entry.ServerName == serverName {
+			return true
+		}
+	}
+
+	// Check command-based denial (stdio servers only) and URL-based denial (remote servers only)
+	if config != nil {
+		serverCommand := GetServerCommandArray(*config)
+		if serverCommand != nil {
+			for _, entry := range s.DeniedMcpServers {
+				if settings.IsMcpServerCommandEntry(entry) && CommandArraysMatch(entry.ServerCommand, serverCommand) {
+					return true
+				}
+			}
+		}
+
+		serverUrl := GetServerUrl(*config)
+		if serverUrl != "" {
+			for _, entry := range s.DeniedMcpServers {
+				if settings.IsMcpServerUrlEntry(entry) && entry.ServerUrl != nil && UrlMatchesPattern(serverUrl, *entry.ServerUrl) {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}
+
 // IsMcpServerAllowedByPolicy 检查服务器是否被策略允许
+// 对应 TS: function isMcpServerAllowedByPolicy(...)
+// 行: 417-508
 func IsMcpServerAllowedByPolicy(serverName string, config *McpServerConfig) bool {
-	// 默认允许所有服务器
-	// 实际实现需要检查允许列表和拒绝列表
-	return true
+	// Denylist takes absolute precedence
+	if IsMcpServerDenied(serverName, config) {
+		return false
+	}
+
+	s := GetMcpAllowlistSettings()
+	if s == nil || len(s.AllowedMcpServers) == 0 {
+		return true // No allowlist restrictions (undefined or empty means allow all)
+	}
+
+	// Check if allowlist contains any command-based or URL-based entries
+	hasCommandEntries := false
+	hasUrlEntries := false
+	for _, entry := range s.AllowedMcpServers {
+		if settings.IsMcpServerCommandEntry(entry) {
+			hasCommandEntries = true
+		}
+		if settings.IsMcpServerUrlEntry(entry) {
+			hasUrlEntries = true
+		}
+	}
+
+	if config != nil {
+		serverCommand := GetServerCommandArray(*config)
+		serverUrl := GetServerUrl(*config)
+
+		if serverCommand != nil {
+			// This is a stdio server
+			if hasCommandEntries {
+				// If ANY serverCommand entries exist, stdio servers MUST match one of them
+				for _, entry := range s.AllowedMcpServers {
+					if settings.IsMcpServerCommandEntry(entry) && CommandArraysMatch(entry.ServerCommand, serverCommand) {
+						return true
+					}
+				}
+				return false // Stdio server doesn't match any command entry
+			} else {
+				// No command entries, check name-based allowance
+				for _, entry := range s.AllowedMcpServers {
+					if settings.IsMcpServerNameEntry(entry) && entry.ServerName != nil && *entry.ServerName == serverName {
+						return true
+					}
+				}
+				return false
+			}
+		} else if serverUrl != "" {
+			// This is a remote server (sse, http, ws, etc.)
+			if hasUrlEntries {
+				// If ANY serverUrl entries exist, remote servers MUST match one of them
+				for _, entry := range s.AllowedMcpServers {
+					if settings.IsMcpServerUrlEntry(entry) && entry.ServerUrl != nil && UrlMatchesPattern(serverUrl, *entry.ServerUrl) {
+						return true
+					}
+				}
+				return false // Remote server doesn't match any URL entry
+			} else {
+				// No URL entries, check name-based allowance
+				for _, entry := range s.AllowedMcpServers {
+					if settings.IsMcpServerNameEntry(entry) && entry.ServerName != nil && *entry.ServerName == serverName {
+						return true
+					}
+				}
+				return false
+			}
+		} else {
+			// Unknown server type - check name-based allowance only
+			for _, entry := range s.AllowedMcpServers {
+				if settings.IsMcpServerNameEntry(entry) && entry.ServerName != nil && *entry.ServerName == serverName {
+					return true
+				}
+			}
+			return false
+		}
+	}
+
+	// No config provided - check name-based allowance only
+	for _, entry := range s.AllowedMcpServers {
+		if settings.IsMcpServerNameEntry(entry) && entry.ServerName != nil && *entry.ServerName == serverName {
+			return true
+		}
+	}
+	return false
 }
 
 // FilterMcpServersByPolicy 按策略过滤服务器
+// SDK-type 服务器豁免 - 它们是 SDK 管理的传输，不是 CLI 管理的连接
+// 对应 TS: export function filterMcpServersByPolicy<T>(...)
+// 行: 536-551
 func FilterMcpServersByPolicy(configs map[string]McpServerConfig) (map[string]McpServerConfig, []string) {
 	allowed := make(map[string]McpServerConfig)
 	blocked := []string{}
 
 	for name, config := range configs {
-		if config.Type == "sdk" {
+		// SDK-type servers are exempt from policy checks
+		if config.Type == "sdk" || IsMcpServerAllowedByPolicy(name, &config) {
 			allowed[name] = config
 		} else {
-			// 允许所有非 sdk 服务器
-			allowed[name] = config
+			blocked = append(blocked, name)
 		}
 	}
 

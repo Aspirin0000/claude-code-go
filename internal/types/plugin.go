@@ -7,21 +7,29 @@ package types
 // 插件清单 (Plugin Manifest)
 // ============================================================================
 
+// PluginChannel represents a channel in plugin manifest
+type PluginChannel struct {
+	Server      string                 `json:"server"`
+	DisplayName string                 `json:"displayName,omitempty"`
+	UserConfig  map[string]interface{} `json:"userConfig,omitempty"`
+}
+
 // PluginManifest 插件清单
 // 对应 TS: export type PluginManifest = ...
 type PluginManifest struct {
-	Name        string         `json:"name"`
-	Version     string         `json:"version"`
-	Description string         `json:"description"`
-	Author      *PluginAuthor  `json:"author,omitempty"`
-	Repository  *string        `json:"repository,omitempty"`
-	License     *string        `json:"license,omitempty"`
-	Commands    interface{}    `json:"commands,omitempty"` // CommandMetadata[] | Record<string, CommandMetadata>
-	Agents      interface{}    `json:"agents,omitempty"`   // string[] | AgentDefinition
-	Skills      interface{}    `json:"skills,omitempty"`   // BundledSkillDefinition[]
-	Hooks       *HooksSettings `json:"hooks,omitempty"`
-	McpServers  interface{}    `json:"mcpServers,omitempty"` // Record<string, McpServerConfig>
-	LspServers  interface{}    `json:"lspServers,omitempty"` // Record<string, LspServerConfig>
+	Name        string          `json:"name"`
+	Version     string          `json:"version"`
+	Description string          `json:"description"`
+	Author      *PluginAuthor   `json:"author,omitempty"`
+	Repository  *string         `json:"repository,omitempty"`
+	License     *string         `json:"license,omitempty"`
+	Commands    interface{}     `json:"commands,omitempty"` // CommandMetadata[] | Record<string, CommandMetadata>
+	Agents      interface{}     `json:"agents,omitempty"`   // string[] | AgentDefinition
+	Skills      interface{}     `json:"skills,omitempty"`   // BundledSkillDefinition[]
+	Hooks       *HooksSettings  `json:"hooks,omitempty"`
+	McpServers  interface{}     `json:"mcpServers,omitempty"` // Record<string, McpServerConfig>
+	LspServers  interface{}     `json:"lspServers,omitempty"` // Record<string, LspServerConfig>
+	Channels    []PluginChannel `json:"channels,omitempty"`   // Channel configurations
 }
 
 // PluginAuthor 插件作者
