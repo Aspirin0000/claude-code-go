@@ -176,6 +176,62 @@ func (f *FileWriteTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	return json.Marshal(result)
 }
 
+// FileEditTool 文件编辑工具 - 使用搜索替换
+type FileEditTool struct{}
+
+func (f *FileEditTool) Name() string        { return "file_edit" }
+func (f *FileEditTool) Description() string { return "编辑文件内容（搜索并替换）" }
+func (f *FileEditTool) IsReadOnly() bool    { return false }
+func (f *FileEditTool) IsDestructive() bool { return true }
+
+func (f *FileEditTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"file_path": {"type": "string", "description": "文件路径"},
+			"old_string": {"type": "string", "description": "要替换的旧字符串"},
+			"new_string": {"type": "string", "description": "新字符串"}
+		},
+		"required": ["file_path", "old_string", "new_string"]
+	}`)
+}
+
+func (f *FileEditTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		FilePath  string `json:"file_path"`
+		OldString string `json:"old_string"`
+		NewString string `json:"new_string"`
+	}
+
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	content, err := os.ReadFile(params.FilePath)
+	if err != nil {
+		return nil, fmt.Errorf("读取文件失败: %w", err)
+	}
+
+	oldContent := string(content)
+	if !strings.Contains(oldContent, params.OldString) {
+		return nil, fmt.Errorf("未找到要替换的字符串")
+	}
+
+	newContent := strings.Replace(oldContent, params.OldString, params.NewString, 1)
+
+	if err := os.WriteFile(params.FilePath, []byte(newContent), 0644); err != nil {
+		return nil, fmt.Errorf("写入文件失败: %w", err)
+	}
+
+	result := struct {
+		Success bool `json:"success"`
+	}{
+		Success: true,
+	}
+
+	return json.Marshal(result)
+}
+
 // GrepTool Grep 搜索工具
 type GrepTool struct{}
 
@@ -229,19 +285,24 @@ func (g *GrepTool) Call(ctx context.Context, input json.RawMessage) (json.RawMes
 		}
 	}
 
+	matches := []string{}
+	if content != "" {
+		lines := strings.Split(strings.TrimSpace(content), "\n")
+		for _, line := range lines {
+			if line != "" {
+				matches = append(matches, line)
+			}
+		}
+	}
+
 	result := struct {
 		Content    string   `json:"content"`
 		Matches    []string `json:"matches"`
 		NumMatches int      `json:"num_matches"`
 	}{
 		Content:    content,
-		Matches:    strings.Split(strings.TrimSpace(content), "\n"),
-		NumMatches: len(strings.Split(strings.TrimSpace(content), "\n")),
-	}
-
-	if content == "" {
-		result.NumMatches = 0
-		result.Matches = []string{}
+		Matches:    matches,
+		NumMatches: len(matches),
 	}
 
 	return json.Marshal(result)
@@ -276,13 +337,12 @@ func (g *GlobTool) Call(ctx context.Context, input json.RawMessage) (json.RawMes
 		return nil, err
 	}
 
-	// 使用 glob 命令或 find
+	// 使用 find 命令实现 glob 功能
 	searchPath := params.Path
 	if searchPath == "" {
 		searchPath = "."
 	}
 
-	// 使用 find 命令实现 glob 功能
 	cmd := exec.CommandContext(ctx, "find", searchPath, "-name", params.Pattern, "-type", "f")
 	output, err := cmd.Output()
 
@@ -304,62 +364,6 @@ func (g *GlobTool) Call(ctx context.Context, input json.RawMessage) (json.RawMes
 		Files:     files,
 		NumFiles:  len(files),
 		Truncated: false,
-	}
-
-	return json.Marshal(result)
-}
-
-// FileEditTool 文件编辑工具 - 使用搜索替换
-type FileEditTool struct{}
-
-func (f *FileEditTool) Name() string        { return "file_edit" }
-func (f *FileEditTool) Description() string { return "编辑文件内容（搜索并替换）" }
-func (f *FileEditTool) IsReadOnly() bool    { return false }
-func (f *FileEditTool) IsDestructive() bool { return true }
-
-func (f *FileEditTool) InputSchema() json.RawMessage {
-	return json.RawMessage(`{
-		"type": "object",
-		"properties": {
-			"file_path": {"type": "string", "description": "文件路径"},
-			"old_string": {"type": "string", "description": "要替换的旧字符串"},
-			"new_string": {"type": "string", "description": "新字符串"}
-		},
-		"required": ["file_path", "old_string", "new_string"]
-	}`)
-}
-
-func (f *FileEditTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
-	var params struct {
-		FilePath  string `json:"file_path"`
-		OldString string `json:"old_string"`
-		NewString string `json:"new_string"`
-	}
-
-	if err := json.Unmarshal(input, &params); err != nil {
-		return nil, err
-	}
-
-	content, err := os.ReadFile(params.FilePath)
-	if err != nil {
-		return nil, fmt.Errorf("读取文件失败: %w", err)
-	}
-
-	oldContent := string(content)
-	if !strings.Contains(oldContent, params.OldString) {
-		return nil, fmt.Errorf("未找到要替换的字符串")
-	}
-
-	newContent := strings.Replace(oldContent, params.OldString, params.NewString, 1)
-
-	if err := os.WriteFile(params.FilePath, []byte(newContent), 0644); err != nil {
-		return nil, fmt.Errorf("写入文件失败: %w", err)
-	}
-
-	result := struct {
-		Success bool `json:"success"`
-	}{
-		Success: true,
 	}
 
 	return json.Marshal(result)
@@ -421,6 +425,84 @@ func (t *TodoWriteTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	return json.Marshal(result)
 }
 
+// WebSearchTool Web 搜索工具（简化版）
+type WebSearchTool struct{}
+
+func (w *WebSearchTool) Name() string        { return "web_search" }
+func (w *WebSearchTool) Description() string { return "在网页上搜索信息" }
+func (w *WebSearchTool) IsReadOnly() bool    { return true }
+func (w *WebSearchTool) IsDestructive() bool { return false }
+
+func (w *WebSearchTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"query": {"type": "string", "description": "搜索查询"}
+		},
+		"required": ["query"]
+	}`)
+}
+
+func (w *WebSearchTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	// 这是一个 stub 实现，实际应该调用搜索引擎 API
+	result := struct {
+		Results []string `json:"results"`
+		Query   string   `json:"query"`
+		Note    string   `json:"note"`
+	}{
+		Results: []string{},
+		Query:   "",
+		Note:    "Web 搜索功能需要配置搜索引擎 API。请使用 web_fetch 工具直接获取网页内容。",
+	}
+
+	return json.Marshal(result)
+}
+
+// WebFetchTool Web 获取工具
+type WebFetchTool struct{}
+
+func (w *WebFetchTool) Name() string        { return "web_fetch" }
+func (w *WebFetchTool) Description() string { return "获取网页内容" }
+func (w *WebFetchTool) IsReadOnly() bool    { return true }
+func (w *WebFetchTool) IsDestructive() bool { return false }
+
+func (w *WebFetchTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"url": {"type": "string", "description": "网页 URL"}
+		},
+		"required": ["url"]
+	}`)
+}
+
+func (w *WebFetchTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		URL string `json:"url"`
+	}
+
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	// 使用 curl 获取网页内容
+	cmd := exec.CommandContext(ctx, "curl", "-s", "-L", params.URL)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("获取网页失败: %w", err)
+	}
+
+	result := struct {
+		Content string `json:"content"`
+		URL     string `json:"url"`
+	}{
+		Content: string(output),
+		URL:     params.URL,
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry 创建包含默认工具的注册表
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -432,6 +514,8 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&GrepTool{})
 	registry.Register(&GlobTool{})
 	registry.Register(&TodoWriteTool{})
+	registry.Register(&WebSearchTool{})
+	registry.Register(&WebFetchTool{})
 
 	return registry
 }
