@@ -55,17 +55,17 @@ Go 实现已建立基础框架，正在逐步完善功能对等性。
 - ✅ types.go (258行) - 完整类型系统
 - ✅ config.go (335行) - 核心配置函数
 - ✅ client.go (727行) - Client 结构体、错误处理、认证缓存、基础传输
-- ✅ transport.go - HTTP/SSE/Stdio 传输实现
+- ✅ transport.go (350行) - HTTP/SSE/Stdio 传输实现
+- ✅ connection.go (380行) - 连接管理器、批量连接、状态管理
 
 ### 缺失或损坏
 - ⚠️ WebSocket 传输需要完整实现
 - ⚠️ OAuth 认证流程需完善
 - ❌ ClaudeAI 代理连接
 - ❌ Chrome/Computer Use 内进程服务器
-- ❌ 连接池管理
-- ❌ 工具调用完整循环
+- ⚠️ 工具/资源获取缓存 (部分)
 
-**状态:** 客户端核心 60% 完成
+**状态:** 客户端核心 75% 完成
 
 ---
 
