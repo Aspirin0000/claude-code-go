@@ -507,6 +507,7 @@ func (w *WebFetchTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
 
+	// 基础工具
 	registry.Register(&BashTool{})
 	registry.Register(&FileReadTool{})
 	registry.Register(&FileWriteTool{})
@@ -516,6 +517,14 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&TodoWriteTool{})
 	registry.Register(&WebSearchTool{})
 	registry.Register(&WebFetchTool{})
+
+	// 扩展工具（简化实现）
+	registry.Register(&NotebookEditTool{})
+	registry.Register(&TaskGetTool{})
+	registry.Register(&TaskCreateTool{})
+	registry.Register(&TaskUpdateTool{})
+	registry.Register(&TaskStopTool{})
+	registry.Register(&AgentTool{})
 
 	return registry
 }
