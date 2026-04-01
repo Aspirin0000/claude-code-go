@@ -34,13 +34,6 @@ type Tool struct {
 	InputSchema json.RawMessage `json:"input_schema"`
 }
 
-// ToolUse 工具调用
-type ToolUse struct {
-	ID    string          `json:"id"`
-	Name  string          `json:"name"`
-	Input json.RawMessage `json:"input"`
-}
-
 // ContentBlock 内容块
 type ContentBlock struct {
 	Type  string          `json:"type"`
@@ -48,6 +41,12 @@ type ContentBlock struct {
 	ID    string          `json:"id,omitempty"`
 	Name  string          `json:"name,omitempty"`
 	Input json.RawMessage `json:"input,omitempty"`
+}
+
+// Response API 响应
+type Response struct {
+	Role    string         `json:"role"`
+	Content []ContentBlock `json:"content"`
 }
 
 // StreamEvent 流式事件
@@ -76,8 +75,8 @@ func NewClient(apiKey, model string) *Client {
 	}
 }
 
-// Chat 发送聊天请求
-func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*Message, error) {
+// ChatWithBlocks 发送聊天请求并返回内容块
+func (c *Client) ChatWithBlocks(ctx context.Context, messages []Message, tools []Tool) (*Response, error) {
 	// 构建请求体
 	type toolDef struct {
 		Name        string          `json:"name"`
@@ -102,9 +101,14 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*M
 	}
 
 	if c.apiKey == "" {
-		return &Message{
-			Role:    "assistant",
-			Content: "⚠️ 未配置 API Key。请在 ~/.config/claude/config.json 中设置 api_key。",
+		return &Response{
+			Role: "assistant",
+			Content: []ContentBlock{
+				{
+					Type: "text",
+					Text: "⚠️ 未配置 API Key。请在 ~/.config/claude/config.json 中设置 api_key。",
+				},
+			},
 		}, nil
 	}
 
@@ -133,18 +137,24 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*M
 		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}
 
-	var result struct {
-		Content []ContentBlock `json:"content"`
-		Role    string         `json:"role"`
-	}
-
+	var result Response
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("decode response: %w", err)
 	}
 
-	// 构建响应消息
+	return &result, nil
+}
+
+// Chat 发送聊天请求（兼容旧接口）
+func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*Message, error) {
+	resp, err := c.ChatWithBlocks(ctx, messages, tools)
+	if err != nil {
+		return nil, err
+	}
+
+	// 构建响应消息文本
 	var content strings.Builder
-	for _, block := range result.Content {
+	for _, block := range resp.Content {
 		switch block.Type {
 		case "text":
 			content.WriteString(block.Text)
