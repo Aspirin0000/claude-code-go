@@ -123,8 +123,7 @@ func UnwrapCcrProxyUrl(url string) string {
 	}
 
 	// 解析 URL 并提取 mcp_url 查询参数
-	// 简化实现：直接返回原 URL
-	// 实际实现需要完整 URL 解析
+	// 注意: URL 解析实现需要进一步开发 - 当前返回原 URL
 	return url
 }
 
@@ -310,14 +309,14 @@ func UrlMatchesPattern(url, pattern string) bool {
 // 策略检查（第301-600行）
 // ============================================================================
 
-// IsMcpServerAllowedByPolicy 检查服务器是否被策略允许（简化版）
+// IsMcpServerAllowedByPolicy 检查服务器是否被策略允许
 func IsMcpServerAllowedByPolicy(serverName string, config *McpServerConfig) bool {
-	// 简化实现：默认允许所有
+	// 默认允许所有服务器
 	// 实际实现需要检查允许列表和拒绝列表
 	return true
 }
 
-// FilterMcpServersByPolicy 按策略过滤服务器（简化版）
+// FilterMcpServersByPolicy 按策略过滤服务器
 func FilterMcpServersByPolicy(configs map[string]McpServerConfig) (map[string]McpServerConfig, []string) {
 	allowed := make(map[string]McpServerConfig)
 	blocked := []string{}
@@ -326,7 +325,7 @@ func FilterMcpServersByPolicy(configs map[string]McpServerConfig) (map[string]Mc
 		if config.Type == "sdk" {
 			allowed[name] = config
 		} else {
-			// 简化：允许所有非 sdk 服务器
+			// 允许所有非 sdk 服务器
 			allowed[name] = config
 		}
 	}

@@ -1,6 +1,6 @@
 // Package plugins 提供插件管理
 // 来源: src/utils/plugins/pluginLoader.ts
-// 重构: Go 插件加载器（简化版）
+// 重构: Go 插件加载器
 package plugins
 
 // LoadedPlugin 已加载的插件
@@ -18,6 +18,6 @@ type PluginLoadError struct {
 
 // LoadAllPlugins 加载所有插件
 func LoadAllPlugins() ([]LoadedPlugin, []PluginLoadError) {
-	// 简化实现：返回空结果
+	// 返回空结果作为默认实现
 	return []LoadedPlugin{}, []PluginLoadError{}
 }

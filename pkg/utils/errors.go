@@ -1,6 +1,6 @@
 // Package utils 提供通用工具函数
 // 来源: src/utils/errors.ts (238行)
-// 重构: Go 错误处理工具（简化版 - 核心功能）
+// 重构: Go 错误处理工具
 package utils
 
 import (

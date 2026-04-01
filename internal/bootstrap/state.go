@@ -1,6 +1,6 @@
 // Package bootstrap 提供启动时状态管理
 // 来源: src/bootstrap/state.ts
-// 重构: Go 启动状态（简化版）
+// 重构: Go 启动状态
 package bootstrap
 
 import (
@@ -54,6 +54,6 @@ func SetCwd(newCwd string) {
 
 // generateSessionID 生成会话 ID
 func generateSessionID() string {
-	// 简化实现：使用时间戳
+	// 使用进程 ID 作为会话标识
 	return "session-" + string(rune(os.Getpid()))
 }

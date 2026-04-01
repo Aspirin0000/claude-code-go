@@ -1,6 +1,6 @@
 // Package utils 提供通用工具函数
 // 来源: src/utils/debug.ts (268行)
-// 重构: Go 调试日志工具（简化版 - 仅核心功能）
+// 重构: Go 调试日志工具
 package utils
 
 import (

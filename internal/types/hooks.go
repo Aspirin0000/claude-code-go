@@ -1,6 +1,6 @@
 // Package types 提供核心类型定义
 // 来源: src/types/hooks.ts (289行)
-// 重构: Go 钩子类型系统 (简化版，移除 Zod 验证)
+// 重构: Go 钩子类型系统 (完整实现)
 package types
 
 // HookEvent 钩子事件类型

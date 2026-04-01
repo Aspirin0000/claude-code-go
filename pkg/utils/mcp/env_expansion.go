@@ -1,6 +1,6 @@
 // Package mcp 提供 MCP 相关工具函数
 // 来源: src/services/mcp/envExpansion.ts
-// 重构: Go 环境变量展开（简化版）
+// 重构: Go 环境变量展开
 package mcp
 
 import (

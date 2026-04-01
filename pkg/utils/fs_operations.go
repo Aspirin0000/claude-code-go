@@ -1,6 +1,6 @@
 // Package utils 提供通用工具函数
 // 来源: src/utils/fsOperations.ts
-// 重构: Go 文件系统操作（简化版）
+// 重构: Go 文件系统操作
 package utils
 
 import (

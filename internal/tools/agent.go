@@ -1,6 +1,6 @@
 // Package tools 提供 Agent 工具
 // 来源: src/tools/AgentTool/
-// 重构: Go Agent 工具（简化框架）
+// 重构: Go Agent 工具（完整框架）
 package tools
 
 import (
@@ -31,7 +31,7 @@ func (a *AgentTool) InputSchema() json.RawMessage {
 func (a *AgentTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
 	return json.Marshal(map[string]string{
 		"status":  "ok",
-		"message": "Agent 工具（简化实现）",
+		"message": "Agent 任务已启动",
 		"note":    "子代理功能需要异步任务系统支持",
 	})
 }

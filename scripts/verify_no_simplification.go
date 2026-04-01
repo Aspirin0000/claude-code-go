@@ -95,9 +95,11 @@ func checkFile(path string) int {
 		}
 
 		// 检查空函数体（简化特征）
-		if strings.Contains(line, "func ") && strings.Contains(line, "{}") {
+		// 注意：检查行尾是否以 "{}" 结束，避免误判 interface{}
+		trimmed := strings.TrimSpace(line)
+		if strings.Contains(line, "func ") && strings.HasSuffix(trimmed, "{}") {
 			fmt.Printf("⚠️  %s:%d - 发现空函数体\n", path, lineNum)
-			fmt.Printf("   %s\n", strings.TrimSpace(line))
+			fmt.Printf("   %s\n", trimmed)
 			violations++
 		}
 	}

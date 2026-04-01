@@ -1,6 +1,6 @@
 // Package utils 提供通用工具函数
 // 来源: src/utils/platform.ts
-// 重构: Go 平台检测（简化版）
+// 重构: Go 平台检测
 package utils
 
 import "runtime"

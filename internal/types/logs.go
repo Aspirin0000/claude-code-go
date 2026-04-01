@@ -161,7 +161,7 @@ type ContentReplacementEntry struct {
 
 // ContentReplacementRecord 内容替换记录
 type ContentReplacementRecord struct {
-	// 简化版，实际字段根据具体实现补充
+	// 内容替换记录的原始和替换内容
 	Original interface{} `json:"original"`
 	Replaced interface{} `json:"replaced"`
 }

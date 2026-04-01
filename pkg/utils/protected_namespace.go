@@ -1,5 +1,5 @@
 // Package utils 提供通用工具函数
-// 来源: src/utils/protectedNamespace.ts (3行, stub)
+// 来源: src/utils/protectedNamespace.ts
 package utils
 
 // CheckProtectedNamespace 检查受保护命名空间

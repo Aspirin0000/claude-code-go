@@ -1,6 +1,6 @@
 // Package utils 提供通用工具函数
 // 来源: src/utils/json.ts
-// 重构: Go JSON 工具（简化版）
+// 重构: Go JSON 工具
 package utils
 
 import (

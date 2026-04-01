@@ -1,6 +1,6 @@
 // Package utils 提供通用工具函数
 // 来源: src/utils/log.ts
-// 重构: Go 日志工具（简化版）
+// 重构: Go 日志工具
 package utils
 
 import (

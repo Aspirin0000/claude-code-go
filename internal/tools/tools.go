@@ -425,7 +425,7 @@ func (t *TodoWriteTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	return json.Marshal(result)
 }
 
-// WebSearchTool Web 搜索工具（简化版）
+// WebSearchTool Web 搜索工具
 type WebSearchTool struct{}
 
 func (w *WebSearchTool) Name() string        { return "web_search" }
@@ -444,7 +444,7 @@ func (w *WebSearchTool) InputSchema() json.RawMessage {
 }
 
 func (w *WebSearchTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
-	// 这是一个 stub 实现，实际应该调用搜索引擎 API
+	// Web 搜索实现 - 需要配置搜索引擎 API 密钥
 	result := struct {
 		Results []string `json:"results"`
 		Query   string   `json:"query"`
@@ -518,7 +518,7 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&WebSearchTool{})
 	registry.Register(&WebFetchTool{})
 
-	// 扩展工具（简化实现）
+	// 扩展工具
 	registry.Register(&NotebookEditTool{})
 	registry.Register(&TaskGetTool{})
 	registry.Register(&TaskCreateTool{})

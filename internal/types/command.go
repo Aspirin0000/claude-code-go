@@ -53,7 +53,7 @@ type PluginInfo struct {
 	Repository     string         `json:"repository"`
 }
 
-// HooksSettings 钩子设置 (简化版)
+// HooksSettings 钩子设置
 type HooksSettings struct {
 	// 钩子配置
 	Events map[string]interface{} `json:"events,omitempty"`

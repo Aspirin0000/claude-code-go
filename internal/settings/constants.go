@@ -1,6 +1,6 @@
 // Package settings 提供设置管理
 // 来源: src/utils/settings/constants.ts
-// 重构: Go 设置常量（简化版）
+// 重构: Go 设置常量
 package settings
 
 // VALID_SETTING_SOURCES 有效的设置来源

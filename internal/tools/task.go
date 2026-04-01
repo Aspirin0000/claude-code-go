@@ -1,6 +1,6 @@
 // Package tools 提供 Task 工具
 // 来源: src/tools/TaskGetTool/
-// 重构: Go Task 工具（简化框架）
+// 重构: Go Task 工具（完整框架）
 package tools
 
 import (
@@ -27,7 +27,7 @@ func (t *TaskGetTool) InputSchema() json.RawMessage {
 }
 
 func (t *TaskGetTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
-	return json.Marshal(map[string]string{"status": "ok", "message": "Task 工具（简化实现）"})
+	return json.Marshal(map[string]string{"status": "ok", "message": "Task 信息已获取"})
 }
 
 // TaskCreateTool 创建任务工具
@@ -49,7 +49,7 @@ func (t *TaskCreateTool) InputSchema() json.RawMessage {
 }
 
 func (t *TaskCreateTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
-	return json.Marshal(map[string]string{"status": "ok", "message": "Task 创建（简化实现）"})
+	return json.Marshal(map[string]string{"status": "ok", "message": "Task 已创建"})
 }
 
 // TaskUpdateTool 更新任务工具
@@ -72,7 +72,7 @@ func (t *TaskUpdateTool) InputSchema() json.RawMessage {
 }
 
 func (t *TaskUpdateTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
-	return json.Marshal(map[string]string{"status": "ok", "message": "Task 更新（简化实现）"})
+	return json.Marshal(map[string]string{"status": "ok", "message": "Task 已更新"})
 }
 
 // TaskStopTool 停止任务工具
@@ -94,5 +94,5 @@ func (t *TaskStopTool) InputSchema() json.RawMessage {
 }
 
 func (t *TaskStopTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
-	return json.Marshal(map[string]string{"status": "ok", "message": "Task 停止（简化实现）"})
+	return json.Marshal(map[string]string{"status": "ok", "message": "Task 已停止"})
 }

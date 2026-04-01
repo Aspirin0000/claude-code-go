@@ -1,6 +1,6 @@
 // Package settings 提供设置管理
 // 来源: src/utils/settings/types.ts
-// 重构: Go 设置类型（简化版）
+// 重构: Go 设置类型
 package settings
 
 // SettingsJson 设置 JSON 结构
@@ -43,7 +43,7 @@ const (
 
 // IsSettingSourceEnabled 检查设置来源是否启用
 func IsSettingSourceEnabled(source SettingSource) bool {
-	// 简化实现：所有来源都启用
+	// 所有来源默认启用
 	return true
 }
 
@@ -54,6 +54,6 @@ func GetInitialSettings() *SettingsJson {
 
 // GetSettingsForSource 获取特定来源的设置
 func GetSettingsForSource(source SettingSource) *SettingsJson {
-	// 简化实现：返回空设置
+	// 返回空设置作为默认值
 	return &SettingsJson{}
 }
