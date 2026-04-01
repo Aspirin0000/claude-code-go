@@ -4,18 +4,22 @@
 package bootstrap
 
 import (
+	"fmt"
 	"os"
+	"time"
 )
 
 var (
-	sessionID   string
-	cwd         string
-	originalCwd string
+	sessionID    string
+	sessionStart time.Time
+	cwd          string
+	originalCwd  string
 )
 
 // InitState 初始化状态
 func InitState() {
 	sessionID = generateSessionID()
+	sessionStart = time.Now()
 	cwd, _ = os.Getwd()
 	originalCwd = cwd
 }
@@ -47,6 +51,15 @@ func GetOriginalCwd() string {
 	return originalCwd
 }
 
+// GetSessionStartTime 获取会话开始时间
+// 对应 TS: export function getSessionStartTime(): Date
+func GetSessionStartTime() time.Time {
+	if sessionStart.IsZero() {
+		InitState()
+	}
+	return sessionStart
+}
+
 // SetCwd 设置当前工作目录
 func SetCwd(newCwd string) {
 	cwd = newCwd
@@ -54,6 +67,6 @@ func SetCwd(newCwd string) {
 
 // generateSessionID 生成会话 ID
 func generateSessionID() string {
-	// 使用进程 ID 作为会话标识
-	return "session-" + string(rune(os.Getpid()))
+	// 使用进程 ID 和时间戳作为会话标识
+	return fmt.Sprintf("session-%d-%d", os.Getpid(), time.Now().Unix())
 }
