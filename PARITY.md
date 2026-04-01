@@ -94,17 +94,37 @@ Go 实现已建立基础框架，正在逐步完善功能对等性。
 - 等
 
 ### Go 存在
-证据：`cmd/claude/cmd/`
-- ✅ root.go - 根命令
-- ✅ chat.go - 聊天命令
-- ⚠️ 命令系统骨架
+证据：`cmd/claude/commands/` (14个文件, ~3,400行)
+- ✅ base.go - Command接口和BaseCommand
+- ✅ registry.go - 线程安全命令注册表
 
-### 缺失
-- ❌ 207个命令文件中 2 个有初步实现
-- ❌ 无命令注册表
-- ❌ 无命令分类系统
+**CMD-1批次 (5个命令):**
+- ✅ /help - 命令帮助系统
+- ✅ /status - 会话状态查看
+- ✅ /clear - 清屏
+- ✅ /version - 版本信息
+- ✅ /exit - 退出
 
-**状态:** 0.9% 完成 (2/207)
+**CMD-2批次 (4个命令):**
+- ✅ /compact - 压缩对话历史
+- ✅ /resume - 恢复会话
+- ✅ /save - 保存对话
+- ✅ /load - 加载对话
+
+**CMD-3批次 (3个命令):**
+- ✅ /config - 配置管理
+- ✅ /model - 模型切换
+- ✅ /permissions - 权限管理
+
+**状态:** 13/207 命令完成 (6.3%)
+
+### 待实现
+- ❌ 194个命令文件待实现
+- ❌ MCP命令 (/mcp, /mcp-add, /mcp-list)
+- ❌ 文件操作命令 (/read, /write, /edit)
+- ❌ 工具命令 (/bash, /git, /grep)
+- ❌ 高级命令 (/plan, /review, /tasks)
+- ❌ 插件命令 (/plugin, /hooks, /skills)
 
 ---
 
