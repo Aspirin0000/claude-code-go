@@ -51,4 +51,5 @@ claude-code-main/
 claude-code-source-code-main/
 
 # OpenCode config
-opencode.json
+opencode.json.DS_Store
+**/.DS_Store

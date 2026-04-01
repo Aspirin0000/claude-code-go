@@ -668,6 +668,9 @@ func CreateTransport(serverType TransportType, serverURL string, headers map[str
 		// Claude AI 代理使用 HTTP 传输
 		return NewHTTPTransport(serverURL, headers, authToken...)
 
+	case TransportTypeWebSocket, TransportTypeWebSocketIDE:
+		return NewWebSocketTransport(serverURL, headers), nil
+
 	default:
 		return nil, fmt.Errorf("unsupported transport type: %s", serverType)
 	}
