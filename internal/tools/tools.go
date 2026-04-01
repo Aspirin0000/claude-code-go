@@ -309,6 +309,118 @@ func (g *GlobTool) Call(ctx context.Context, input json.RawMessage) (json.RawMes
 	return json.Marshal(result)
 }
 
+// FileEditTool 文件编辑工具 - 使用搜索替换
+type FileEditTool struct{}
+
+func (f *FileEditTool) Name() string        { return "file_edit" }
+func (f *FileEditTool) Description() string { return "编辑文件内容（搜索并替换）" }
+func (f *FileEditTool) IsReadOnly() bool    { return false }
+func (f *FileEditTool) IsDestructive() bool { return true }
+
+func (f *FileEditTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"file_path": {"type": "string", "description": "文件路径"},
+			"old_string": {"type": "string", "description": "要替换的旧字符串"},
+			"new_string": {"type": "string", "description": "新字符串"}
+		},
+		"required": ["file_path", "old_string", "new_string"]
+	}`)
+}
+
+func (f *FileEditTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		FilePath  string `json:"file_path"`
+		OldString string `json:"old_string"`
+		NewString string `json:"new_string"`
+	}
+
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	content, err := os.ReadFile(params.FilePath)
+	if err != nil {
+		return nil, fmt.Errorf("读取文件失败: %w", err)
+	}
+
+	oldContent := string(content)
+	if !strings.Contains(oldContent, params.OldString) {
+		return nil, fmt.Errorf("未找到要替换的字符串")
+	}
+
+	newContent := strings.Replace(oldContent, params.OldString, params.NewString, 1)
+
+	if err := os.WriteFile(params.FilePath, []byte(newContent), 0644); err != nil {
+		return nil, fmt.Errorf("写入文件失败: %w", err)
+	}
+
+	result := struct {
+		Success bool `json:"success"`
+	}{
+		Success: true,
+	}
+
+	return json.Marshal(result)
+}
+
+// TodoWriteTool 待办事项工具
+type TodoWriteTool struct{}
+
+func (t *TodoWriteTool) Name() string        { return "todo_write" }
+func (t *TodoWriteTool) Description() string { return "创建或更新任务列表" }
+func (t *TodoWriteTool) IsReadOnly() bool    { return false }
+func (t *TodoWriteTool) IsDestructive() bool { return false }
+
+func (t *TodoWriteTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"todos": {
+				"type": "array",
+				"description": "任务列表",
+				"items": {
+					"type": "object",
+					"properties": {
+						"id": {"type": "string", "description": "任务ID"},
+						"content": {"type": "string", "description": "任务内容"},
+						"status": {"type": "string", "description": "状态: in_progress, done, cancelled"},
+						"priority": {"type": "string", "description": "优先级: high, medium, low"}
+					}
+				}
+			}
+		},
+		"required": ["todos"]
+	}`)
+}
+
+func (t *TodoWriteTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Todos []struct {
+			ID       string `json:"id"`
+			Content  string `json:"content"`
+			Status   string `json:"status"`
+			Priority string `json:"priority"`
+		} `json:"todos"`
+	}
+
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	// 简单返回成功，实际应用可以持久化到文件或数据库
+	result := struct {
+		Success bool `json:"success"`
+		Count   int  `json:"count"`
+	}{
+		Success: true,
+		Count:   len(params.Todos),
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry 创建包含默认工具的注册表
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -316,8 +428,10 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&BashTool{})
 	registry.Register(&FileReadTool{})
 	registry.Register(&FileWriteTool{})
+	registry.Register(&FileEditTool{})
 	registry.Register(&GrepTool{})
 	registry.Register(&GlobTool{})
+	registry.Register(&TodoWriteTool{})
 
 	return registry
 }

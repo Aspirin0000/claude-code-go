@@ -49,3 +49,6 @@ temp/
 # Original TypeScript projects (for reference only)
 claude-code-main/
 claude-code-source-code-main/
+
+# OpenCode config
+opencode.json
