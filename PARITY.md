@@ -144,24 +144,46 @@ Go 实现已建立基础框架，正在逐步完善功能对等性。
 - ✅ /cd (/chdir) - 切换目录
 - ✅ /pwd - 当前目录
 
-**CMD-9批次 (5个高级):**
+**CMD-9批次 (5个高级命令):**
 - ✅ /plan - 执行计划
 - ✅ /review - 审查变更
 - ✅ /tasks - 任务管理
 - ✅ /todos (/todo) - 待办事项
 - ✅ /memory - 会话记忆
 
-**状态:** 35/207 命令完成 (17%)
+**CMD-10批次 (6个系统命令):**
+- ✅ /whoami - 当前用户
+- ✅ /hostname - 系统主机名
+- ✅ /env - 环境变量
+- ✅ /date - 日期时间
+- ✅ /cal - 日历
+- ✅ /touch - 创建文件
+
+**CMD-11批次 (16个系统/开发命令):**
+- ✅ /chmod - 修改权限
+- ✅ /chown - 修改所有者
+- ✅ /ps - 进程状态
+- ✅ /kill - 终止进程
+- ✅ /df - 磁盘空间
+- ✅ /du - 磁盘使用
+- ✅ /wget - 下载文件
+- ✅ /ping - 网络测试
+- ✅ /tar - 归档文件
+- ✅ /zip - 压缩文件
+- ✅ /unzip - 解压文件
+- ✅ /gzip - Gzip压缩
+- ✅ /npm - Node包管理
+- ✅ /pip - Python包管理
+- ✅ /docker - Docker命令
+- ✅ /kubectl - Kubernetes命令
+
+**状态:** 60/207 命令完成 (29%)
 
 ### 待实现
-- ❌ 172个命令文件待实现
-- ❌ 文件属性 (/touch, /chmod, /chown)
-- ❌ 系统信息 (/whoami, /hostname, /env)
-- ❌ 网络命令 (/curl, /wget, /ping, /ssh)
-- ❌ 压缩命令 (/tar, /zip, /gzip, /unzip)
-- ❌ 开发工具 (/npm, /yarn, /pip, /docker, /kubectl)
+- ❌ 147个命令文件待实现（使用 scripts/generate_remaining_commands.sh 批量生成）
+- ❌ 网络命令 (/ssh, /scp, /ftp)
 - ❌ 编辑器 (/nano, /vim, /code)
-- ❌ 其他 (/date, /cal, /bc, /tree)
+- ❌ 其他实用工具 (/bc, /time, /watch, /tmux)
 
 ---
 
