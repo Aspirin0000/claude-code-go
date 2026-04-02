@@ -22,7 +22,31 @@
 - 🔌 **MCP 支持**：Model Context Protocol 协议支持
 - 🔐 **权限管理**：细粒度的工具权限控制
 
-## 项目结构
+## 项目进度
+
+### 整体进度: ~20% 完成
+
+| 模块 | 进度 | 状态 |
+|------|------|------|
+| **MCP服务** | 95% | 12个文件, ~6,200行 ✅ |
+| **命令系统** | 20% | 41/207 命令 ✅ |
+| **类型系统** | 100% | 11个文件完成 ✅ |
+| **工具系统** | 16% | 9/55 工具 ✅ |
+
+### 已实现的命令 (41个)
+
+**核心命令**: /help, /status, /clear, /version, /exit  
+**会话管理**: /compact, /resume, /save, /load  
+**配置管理**: /config, /model, /permissions  
+**MCP管理**: /mcp, /mcp-add, /mcp-list, /mcp-remove  
+**工具命令**: /bash, /git, /grep, /glob  
+**文件操作**: /ls, /read, /edit, /write, /rm, /mkdir, /cp, /mv, /cd, /pwd, /touch  
+**高级功能**: /plan, /review, /tasks, /todos, /memory  
+**系统命令**: /whoami, /hostname, /env, /date, /cal  
+
+*最后更新: 2026-04-01*
+
+---
 
 ```
 .
