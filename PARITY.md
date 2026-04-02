@@ -133,13 +133,35 @@ Go 实现已建立基础框架，正在逐步完善功能对等性。
 - ✅ /read (/cat) - 读取文件
 - ✅ /edit (/modify) - 编辑文件
 
-**状态:** 25/207 命令完成 (12%)
+**CMD-7批次 (4个文件操作):**
+- ✅ /write (/w) - 写入文件
+- ✅ /rm (/del) - 删除文件
+- ✅ /mkdir (/md) - 创建目录
+- ✅ /cp (/copy) - 复制文件
+
+**CMD-8批次 (3个导航):**
+- ✅ /mv (/move) - 移动文件
+- ✅ /cd (/chdir) - 切换目录
+- ✅ /pwd - 当前目录
+
+**CMD-9批次 (5个高级):**
+- ✅ /plan - 执行计划
+- ✅ /review - 审查变更
+- ✅ /tasks - 任务管理
+- ✅ /todos (/todo) - 待办事项
+- ✅ /memory - 会话记忆
+
+**状态:** 35/207 命令完成 (17%)
 
 ### 待实现
-- ❌ 182个命令文件待实现
-- ❌ 文件操作 (/write, /rm, /mkdir)
-- ❌ 高级命令 (/plan, /review, /tasks, /todos)
-- ❌ 插件命令 (/plugin, /hooks, /skills)
+- ❌ 172个命令文件待实现
+- ❌ 文件属性 (/touch, /chmod, /chown)
+- ❌ 系统信息 (/whoami, /hostname, /env)
+- ❌ 网络命令 (/curl, /wget, /ping, /ssh)
+- ❌ 压缩命令 (/tar, /zip, /gzip, /unzip)
+- ❌ 开发工具 (/npm, /yarn, /pip, /docker, /kubectl)
+- ❌ 编辑器 (/nano, /vim, /code)
+- ❌ 其他 (/date, /cal, /bc, /tree)
 
 ---
 
