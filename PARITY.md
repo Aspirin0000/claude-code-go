@@ -116,14 +116,29 @@ Go 实现已建立基础框架，正在逐步完善功能对等性。
 - ✅ /model - 模型切换
 - ✅ /permissions - 权限管理
 
-**状态:** 13/207 命令完成 (6.3%)
+**CMD-4批次 (4个MCP命令):**
+- ✅ /mcp - MCP服务器管理
+- ✅ /mcp-add - 添加MCP服务器
+- ✅ /mcp-list (/mcps) - 列出MCP服务器
+- ✅ /mcp-remove - 移除MCP服务器
+
+**CMD-5批次 (4个工具命令):**
+- ✅ /bash (/sh) - 执行bash命令
+- ✅ /git (/g) - Git操作
+- ✅ /grep (/search) - 文件搜索
+- ✅ /glob - 文件查找
+
+**CMD-6批次 (3个文件命令):**
+- ✅ /ls - 列出目录
+- ✅ /read (/cat) - 读取文件
+- ✅ /edit (/modify) - 编辑文件
+
+**状态:** 25/207 命令完成 (12%)
 
 ### 待实现
-- ❌ 194个命令文件待实现
-- ❌ MCP命令 (/mcp, /mcp-add, /mcp-list)
-- ❌ 文件操作命令 (/read, /write, /edit)
-- ❌ 工具命令 (/bash, /git, /grep)
-- ❌ 高级命令 (/plan, /review, /tasks)
+- ❌ 182个命令文件待实现
+- ❌ 文件操作 (/write, /rm, /mkdir)
+- ❌ 高级命令 (/plan, /review, /tasks, /todos)
 - ❌ 插件命令 (/plugin, /hooks, /skills)
 
 ---
