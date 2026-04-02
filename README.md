@@ -24,29 +24,31 @@
 
 ## 项目进度
 
-### 整体进度: ~29% 完成
+### 整体进度: ~48% 完成
 
 | 模块 | 进度 | 状态 |
 |------|------|------|
 | **MCP服务** | 95% | 12个文件, ~6,200行 ✅ |
-| **命令系统** | 29% | 60/207 命令 ✅ |
+| **命令系统** | 48% | 100/207 命令 ✅ |
 | **类型系统** | 100% | 11个文件完成 ✅ |
 | **工具系统** | 16% | 9/55 工具 ✅ |
 
-### 已实现的命令 (60个)
+### 已实现的命令 (100个)
 
 **核心命令**: /help, /status, /clear, /version, /exit  
 **会话管理**: /compact, /resume, /save, /load  
 **配置管理**: /config, /model, /permissions  
 **MCP管理**: /mcp, /mcp-add, /mcp-list, /mcp-remove  
-**工具命令**: /bash, /git, /grep, /glob, /tree, /which, /curl  
+**工具命令**: /bash, /git, /grep, /glob, /tree, /which, /curl, /time, /bc, /jq, /awk, /sed, /tr, /cut, /paste, /join, /split, /xargs, /watch  
 **文件操作**: /ls, /read, /edit, /write, /rm, /mkdir, /cp, /mv, /cd, /pwd, /touch, /chmod, /chown, /tar, /zip, /unzip, /gzip  
+**编辑器**: /nano, /vim, /code  
 **高级功能**: /plan, /review, /tasks, /todos, /memory  
 **系统命令**: /whoami, /hostname, /env, /date, /cal, /ps, /kill, /df, /du  
-**网络**: /wget, /ping  
-**开发工具**: /npm, /pip, /docker, /kubectl  
+**网络**: /wget, /ping, /ssh, /scp, /ftp, /sftp, /netstat, /traceroute, /ifconfig, /ip, /route, /dig, /nslookup, /host, /nc, /telnet  
+**开发工具**: /npm, /yarn, /pip, /docker, /kubectl, /make, /cmake, /gradle, /mvn, /rustc, /python, /ruby, /node  
+**终端**: /tmux, /screen  
 
-*最后更新: 2026-04-01*
+*最后更新: 2026-04-02*
 
 ---
 
