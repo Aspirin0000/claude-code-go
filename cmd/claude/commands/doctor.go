@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/Aspirin0000/claude-code-go/internal/config"
 )
 
 // DoctorCommand diagnoses system and configuration issues
@@ -21,37 +23,39 @@ func NewDoctorCommand() *DoctorCommand {
 	return &DoctorCommand{
 		BaseCommand: NewBaseCommand(
 			"doctor",
-			"诊断系统和配置问题",
+			"Diagnose system and configuration issues",
 			CategoryAdvanced,
 		).
-			WithHelp(`运行诊断检查，识别常见问题。
+			WithHelp(`Run diagnostic checks to identify common issues.
 
-检查项目:
-- Go 版本
-- Git 安装
-- 环境变量
-- 配置文件
-- 网络连接
+Checks include:
+- Go version
+- Git installation
+- API key configuration
+- Environment variables
+- Configuration files
+- Network connectivity
 
-使用: /doctor`),
+Usage: /doctor`),
 	}
 }
 
 // Execute runs diagnostics
 func (c *DoctorCommand) Execute(ctx context.Context, args []string) error {
 	fmt.Println()
-	fmt.Println("🔍 运行诊断检查 (Running Diagnostics)")
+	fmt.Println("🔍 Running Diagnostics")
 	fmt.Println("═══════════════════════════════════════")
 
 	checks := []struct {
 		name string
 		fn   func() (bool, string)
 	}{
-		{"Go 版本", c.checkGoVersion},
-		{"Git 安装", c.checkGit},
-		{"环境变量", c.checkEnv},
-		{"配置文件", c.checkConfig},
-		{"网络连接", c.checkNetwork},
+		{"Go Version", c.checkGoVersion},
+		{"Git Installation", c.checkGit},
+		{"API Key", c.checkAPIKey},
+		{"Environment Variables", c.checkEnv},
+		{"Config File", c.checkConfig},
+		{"Network Connection", c.checkNetwork},
 	}
 
 	allPassed := true
@@ -67,9 +71,9 @@ func (c *DoctorCommand) Execute(ctx context.Context, args []string) error {
 
 	fmt.Println()
 	if allPassed {
-		fmt.Println("✓ 所有检查通过！")
+		fmt.Println("✓ All checks passed!")
 	} else {
-		fmt.Println("⚠️  发现一些问题，请检查上方输出。")
+		fmt.Println("⚠️  Some issues found. Please check the output above.")
 	}
 	fmt.Println()
 
@@ -80,7 +84,7 @@ func (c *DoctorCommand) checkGoVersion() (bool, string) {
 	cmd := exec.Command("go", "version")
 	out, err := cmd.Output()
 	if err != nil {
-		return false, "未安装"
+		return false, "not installed"
 	}
 	return true, strings.TrimSpace(string(out))
 }
@@ -89,9 +93,28 @@ func (c *DoctorCommand) checkGit() (bool, string) {
 	cmd := exec.Command("git", "--version")
 	out, err := cmd.Output()
 	if err != nil {
-		return false, "未安装"
+		return false, "not installed"
 	}
 	return true, strings.TrimSpace(string(out))
+}
+
+func (c *DoctorCommand) checkAPIKey() (bool, string) {
+	// Check environment variable
+	if os.Getenv("ANTHROPIC_API_KEY") != "" {
+		return true, "ANTHROPIC_API_KEY is set"
+	}
+	if os.Getenv("ANTHROPIC_AUTH_TOKEN") != "" {
+		return true, "ANTHROPIC_AUTH_TOKEN is set"
+	}
+
+	// Check config file
+	cfgPath := config.GetConfigPath()
+	cfg, err := config.Load(cfgPath)
+	if err == nil && cfg.APIKey != "" {
+		return true, "API key found in config file"
+	}
+
+	return false, "No API key found (set ANTHROPIC_API_KEY or run /init)"
 }
 
 func (c *DoctorCommand) checkEnv() (bool, string) {
@@ -103,17 +126,17 @@ func (c *DoctorCommand) checkEnv() (bool, string) {
 		}
 	}
 	if len(missing) > 0 {
-		return false, fmt.Sprintf("缺少: %s", strings.Join(missing, ", "))
+		return false, fmt.Sprintf("Missing: %s", strings.Join(missing, ", "))
 	}
-	return true, "所有必需变量已设置"
+	return true, "All required variables set"
 }
 
 func (c *DoctorCommand) checkConfig() (bool, string) {
 	configDir := getConfigDir()
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		return true, "配置目录不存在（将自动创建）"
+		return true, "Config directory does not exist (will be created automatically)"
 	}
-	return true, "配置目录存在"
+	return true, "Config directory exists"
 }
 
 func (c *DoctorCommand) checkNetwork() (bool, string) {
@@ -124,9 +147,9 @@ func (c *DoctorCommand) checkNetwork() (bool, string) {
 	}
 	err := cmd.Run()
 	if err != nil {
-		return false, "无法连接到网络"
+		return false, "Unable to connect to network"
 	}
-	return true, "网络连接正常"
+	return true, "Network connection OK"
 }
 
 func getConfigDir() string {
