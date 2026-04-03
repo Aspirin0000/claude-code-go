@@ -329,6 +329,7 @@ func (c *PermissionsCommand) showCurrentLevel() error {
 
 	fmt.Println()
 	fmt.Printf("%sCurrent Permission Level:%s %s%s%s\n",
+		ColorBold,
 		ResetColor,
 		info.Color,
 		info.Name,

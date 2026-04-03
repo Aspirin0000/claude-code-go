@@ -50,11 +50,11 @@ func NewGitCommand() *GitCommand {
   %sstatus%s              Show working tree status
 		%slog [n]%s            Show last n commits (default: 10)
 		%sdiff%s               Show unstaged changes
-  %sbranch%              List branches
+  %sbranch%s               List branches
   %scommit <message>%s   Commit staged changes
   %sadd <files>%s        Stage files (use . for all)
-  %spush%                Push to remote
-  %spull%                Pull from remote
+  %spush%s               Push to remote
+  %spull%s               Pull from remote
   %sstash [command]%s    Stash changes (list, pop, drop)
 
 %sAliases:%s %s
@@ -67,6 +67,7 @@ func NewGitCommand() *GitCommand {
 		cmd.name, cmd.description,
 		ColorBold, ColorReset,
 		ColorBold, ColorReset,
+		ColorGreen, ColorReset,
 		ColorGreen, ColorReset,
 		ColorGreen, ColorReset,
 		ColorGreen, ColorReset,
