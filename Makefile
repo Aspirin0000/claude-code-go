@@ -11,9 +11,32 @@ check-simplification:
 
 # 构建项目
 build: check-simplification
-	@echo "🔨 构建项目..."
+	@echo "🔨 Building project..."
 	@go build ./...
-	@echo "✅ 构建成功"
+	@go build -o claude ./cmd/claude
+	@echo "✅ Build successful! Binary: ./claude"
+
+# 安装到系统
+install: build
+	@echo "📦 Installing claude to /usr/local/bin..."
+	@sudo cp claude /usr/local/bin/
+	@echo "✅ Installed successfully! Run 'claude --help' to get started."
+
+# 卸载
+uninstall:
+	@echo "🗑️  Removing claude from /usr/local/bin..."
+	@sudo rm -f /usr/local/bin/claude
+	@echo "✅ Uninstalled successfully!"
+
+# 构建并运行
+run: build
+	@echo "🚀 Running..."
+	@./claude
+
+# 开发模式运行
+dev:
+	@echo "🚀 Running in dev mode..."
+	@go run ./cmd/claude
 
 # 运行测试
 test:
@@ -47,13 +70,17 @@ check: check-simplification build test
 
 # 帮助
 help:
-	@echo "可用目标:"
-	@echo "  all                  - 检查简化并构建"
-	@echo "  check-simplification - 检查是否有简化代码"
-	@echo "  build               - 构建项目"
-	@echo "  test                - 运行测试"
-	@echo "  check               - 完整检查（简化+构建+测试）"
-	@echo "  clean               - 清理生成文件"
-	@echo "  deps                - 安装依赖"
-	@echo "  fmt                 - 格式化代码"
-	@echo "  help                - 显示帮助"
+	@echo "Available targets:"
+	@echo "  all                  - Check simplification and build"
+	@echo "  check-simplification - Check for simplified code"
+	@echo "  build               - Build the project"
+	@echo "  install             - Install claude to /usr/local/bin"
+	@echo "  uninstall           - Remove claude from /usr/local/bin"
+	@echo "  test                - Run tests"
+	@echo "  check               - Full check (simplification + build + test)"
+	@echo "  clean               - Clean generated files"
+	@echo "  deps                - Install dependencies"
+	@echo "  fmt                 - Format code"
+	@echo "  run                 - Build and run"
+	@echo "  dev                 - Run with go run"
+	@echo "  help                - Show this help"

@@ -50,3 +50,5 @@ func (c *ClearCommand) Execute(ctx context.Context, args []string) error {
 
 	return nil
 }
+
+func init() { Register(NewClearCommand()) }

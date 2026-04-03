@@ -10,6 +10,61 @@
 
 ---
 
+## 🚀 Quick Start
+
+### Prerequisites
+
+- **Go 1.21+** installed
+- **Anthropic API Key** (get from [console.anthropic.com](https://console.anthropic.com))
+
+### Install
+
+```bash
+# Clone the repository
+git clone https://github.com/Aspirin0000/claude-code-go.git
+cd claude-code-go
+
+# Build
+make build
+
+# (Optional) Install to system
+make install
+
+# Or run directly without installing
+make run
+```
+
+### Configure
+
+```bash
+# Set your API key
+export ANTHROPIC_API_KEY="your-api-key-here"
+
+# Or create config file
+mkdir -p ~/.config/claude
+cat > ~/.config/claude/config.json << 'EOF'
+{
+  "api_key": "your-api-key-here",
+  "model": "claude-sonnet-4-20250514"
+}
+EOF
+```
+
+### Run
+
+```bash
+# Interactive mode
+./claude
+
+# With initial prompt
+./claude -p "Help me understand this codebase"
+
+# Use specific model
+./claude --model claude-opus-4-20250514
+```
+
+---
+
 ## 📖 Project Overview
 
 ### What is Claude Code?

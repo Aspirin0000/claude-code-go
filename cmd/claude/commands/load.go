@@ -261,3 +261,5 @@ func (c *LoadCommand) restoreSession(data *ConversationData) error {
 
 	return nil
 }
+
+func init() { Register(NewLoadCommand()) }

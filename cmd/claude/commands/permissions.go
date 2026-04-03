@@ -363,8 +363,8 @@ func (c *PermissionsCommand) showCurrentLevel() error {
 	}
 
 	fmt.Println()
-	fmt.Printf("Use '%s <level>' to change permission level.\n", c.Name)
-	fmt.Printf("Use '%s list' to see all available levels.\n", c.Name)
+	fmt.Printf("Use '%s <level>' to change permission level.\n", c.Name())
+	fmt.Printf("Use '%s list' to see all available levels.\n", c.Name())
 	fmt.Println()
 
 	return nil
@@ -411,7 +411,7 @@ func (c *PermissionsCommand) listLevels() error {
 		fmt.Println()
 	}
 
-	fmt.Printf("Use '%s <level>' to change your permission level.\n", c.Name)
+	fmt.Printf("Use '%s <level>' to change your permission level.\n", c.Name())
 	fmt.Println()
 
 	return nil
@@ -442,7 +442,7 @@ func (c *PermissionsCommand) setLevel(levelStr string) error {
 		for _, l := range AllPermissionLevels {
 			fmt.Fprintf(os.Stderr, "  - %s\n", l)
 		}
-		fmt.Fprintf(os.Stderr, "\nUse '%s list' to see detailed information.\n", c.Name)
+		fmt.Fprintf(os.Stderr, "\nUse '%s list' to see detailed information.\n", c.Name())
 		return fmt.Errorf("invalid permission level")
 	}
 
@@ -492,7 +492,7 @@ func (c *PermissionsCommand) setLevel(levelStr string) error {
 // showHelp 显示帮助信息
 func (c *PermissionsCommand) showHelp() error {
 	fmt.Println()
-	fmt.Printf("Usage: %s [command|level]\n", c.Name)
+	fmt.Printf("Usage: %s [command|level]\n", c.Name())
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  (no args)    Show current permission level")
@@ -511,9 +511,9 @@ func (c *PermissionsCommand) showHelp() error {
 	}
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Printf("  %s              Show current level\n", c.Name)
-	fmt.Printf("  %s read-only    Set to read-only mode\n", c.Name)
-	fmt.Printf("  %s list         List all levels\n", c.Name)
+	fmt.Printf("  %s              Show current level\n", c.Name())
+	fmt.Printf("  %s read-only    Set to read-only mode\n", c.Name())
+	fmt.Printf("  %s list         List all levels\n", c.Name())
 	fmt.Println()
 	fmt.Println("Aliases:", strings.Join(c.Aliases(), ", "))
 	fmt.Println()
@@ -541,3 +541,5 @@ func ShouldAskBeforeToolUse(toolName string) bool {
 	_, needsAsk := IsToolAllowed(level, toolName)
 	return needsAsk
 }
+
+func init() { Register(NewPermissionsCommand()) }

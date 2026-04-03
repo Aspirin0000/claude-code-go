@@ -62,3 +62,5 @@ func (c *VersionCommand) Execute(ctx context.Context, args []string) error {
 
 	return nil
 }
+
+func init() { Register(NewVersionCommand()) }

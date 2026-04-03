@@ -462,3 +462,7 @@ func (c *BashCommand) SetDryRun(dryRun bool) {
 func (c *BashCommand) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }
+
+func init() {
+	Register(NewBashCommand())
+}

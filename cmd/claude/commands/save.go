@@ -177,3 +177,5 @@ func capitalize(s string) string {
 	}
 	return string(first) + s[1:]
 }
+
+func init() { Register(NewSaveCommand(nil)) }

@@ -48,8 +48,8 @@ func NewGitCommand() *GitCommand {
 
 %sSubcommands:%s
   %sstatus%s              Show working tree status
-  %slog [n]%s            Show last n commits (default: 10)
-  %sdiff%                Show unstaged changes
+		%slog [n]%s            Show last n commits (default: 10)
+		%sdiff%s               Show unstaged changes
   %sbranch%              List branches
   %scommit <message>%s   Commit staged changes
   %sadd <files>%s        Stage files (use . for all)
@@ -642,3 +642,5 @@ func (g *GitCommand) GetRemoteInfo() (map[string]string, error) {
 
 	return remotes, nil
 }
+
+func init() { Register(NewGitCommand()) }

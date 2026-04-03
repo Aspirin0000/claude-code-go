@@ -263,3 +263,5 @@ func (s *SessionStore) getSessionsDir() string {
 	}
 	return filepath.Join(home, ".claude", "sessions")
 }
+
+func init() { Register(NewResumeCommand()) }

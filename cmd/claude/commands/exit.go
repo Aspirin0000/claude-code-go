@@ -38,3 +38,5 @@ func (c *ExitCommand) Execute(ctx context.Context, args []string) error {
 	os.Exit(0)
 	return nil // Never reached
 }
+
+func init() { Register(NewExitCommand()) }

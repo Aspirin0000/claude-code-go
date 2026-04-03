@@ -389,3 +389,5 @@ func contains(slice []string, item string) bool {
 func generateUUID() string {
 	return fmt.Sprintf("%d-%d", time.Now().UnixNano(), time.Now().Unix())
 }
+
+func init() { Register(NewCompactCommand()) }
