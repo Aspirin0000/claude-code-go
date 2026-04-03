@@ -6,58 +6,51 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/Aspirin0000/claude-code-go/internal/state"
 )
-
-// Conversation defines the interface for accessing conversation data
-type Conversation interface {
-	GetMessages() []Message
-}
-
-// Message represents a single message in a conversation
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
 
 // SaveCommand saves conversations to files
 type SaveCommand struct {
 	*BaseCommand
-	conversation Conversation
 }
 
 // NewSaveCommand creates a new save command
-func NewSaveCommand(conv Conversation) *SaveCommand {
+func NewSaveCommand() *SaveCommand {
 	cmd := &SaveCommand{
-		BaseCommand:  NewBaseCommand("save", "Save current conversation to a file", CategorySession),
-		conversation: conv,
+		BaseCommand: NewBaseCommand("save", "Save current conversation to a file", CategorySession),
 	}
 	cmd.WithAliases("export", "backup")
-	cmd.WithHelp(`/save - Save conversation to file
+	cmd.WithHelp(`Usage: /save [filename] [--format json|markdown]
 
-Usage: /save [filename] [--format json|markdown]
+Save the current conversation to a file.
 
 Options:
-  filename      Output file name (default: conversation_<timestamp>.json)
+  filename      Output file name (default: auto-generated)
   --format      Output format: json or markdown (default: json)
 
 Examples:
-  /save                          Save as JSON with timestamp
+  /save                          Save as JSON with auto-generated name
   /save my_chat.json             Save with specific name
   /save chat.md --format md      Save as Markdown
-  /export backup.json            Use export alias`)
+  /export backup.json            Use export alias
+
+Note: If auto-save is enabled, sessions are automatically saved to the
+sessions directory. Use /save for manual exports to custom locations.`)
 	return cmd
 }
 
 // Execute runs the save command
 func (s *SaveCommand) Execute(ctx context.Context, args []string) error {
-	filename := s.generateDefaultFilename()
+	filename := ""
 	format := "json"
 
 	// Parse arguments
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
-		case "--format":
+		case "--format", "-f":
 			if i+1 < len(args) {
 				format = args[i+1]
 				i++
@@ -69,19 +62,11 @@ func (s *SaveCommand) Execute(ctx context.Context, args []string) error {
 		}
 	}
 
-	// Add extension based on format
-	extension := ".json"
-	if format == "markdown" || format == "md" {
-		extension = ".md"
-	}
-	if !hasExtension(filename, ".json") && !hasExtension(filename, ".md") {
-		filename = filename + extension
-	}
-
 	// Get conversation messages
-	messages := s.conversation.GetMessages()
-	if messages == nil {
-		messages = []Message{}
+	messages := state.GlobalState.GetMessages()
+	if len(messages) == 0 {
+		fmt.Println("No messages to save.")
+		return nil
 	}
 
 	var content []byte
@@ -96,6 +81,29 @@ func (s *SaveCommand) Execute(ctx context.Context, args []string) error {
 
 	if err != nil {
 		return fmt.Errorf("failed to format conversation: %w", err)
+	}
+
+	// If filename not provided, use auto-save directory
+	if filename == "" {
+		if state.GlobalSessionStorage != nil {
+			// Use session storage
+			if err := state.GlobalSessionStorage.SaveSession(state.GlobalState, ""); err != nil {
+				return fmt.Errorf("failed to auto-save session: %w", err)
+			}
+			fmt.Println("Session auto-saved successfully.")
+			return nil
+		}
+		// Fallback to current directory
+		filename = s.generateDefaultFilename()
+	}
+
+	// Add extension based on format
+	extension := ".json"
+	if format == "markdown" || format == "md" {
+		extension = ".md"
+	}
+	if !strings.HasSuffix(filename, ".json") && !strings.HasSuffix(filename, ".md") {
+		filename = filename + extension
 	}
 
 	// Create directory if needed
@@ -117,54 +125,56 @@ func (s *SaveCommand) Execute(ctx context.Context, args []string) error {
 
 func (s *SaveCommand) generateDefaultFilename() string {
 	timestamp := time.Now().Format("2006-01-02_15-04-05")
-	return fmt.Sprintf("conversation_%s", timestamp)
+	return fmt.Sprintf("conversation_%s.json", timestamp)
 }
 
-func (s *SaveCommand) exportAsJSON(messages []Message) ([]byte, error) {
+func (s *SaveCommand) exportAsJSON(messages []state.Message) ([]byte, error) {
 	export := struct {
-		Timestamp string    `json:"timestamp"`
-		Messages  []Message `json:"messages"`
+		Timestamp    string          `json:"timestamp"`
+		SessionID    string          `json:"session_id"`
+		CWD          string          `json:"cwd"`
+		MessageCount int             `json:"message_count"`
+		Messages     []state.Message `json:"messages"`
 	}{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Messages:  messages,
+		Timestamp:    time.Now().Format(time.RFC3339),
+		SessionID:    state.GlobalState.SessionID,
+		CWD:          state.GlobalState.CWD,
+		MessageCount: len(messages),
+		Messages:     messages,
 	}
 
 	return json.MarshalIndent(export, "", "  ")
 }
 
-func (s *SaveCommand) exportAsMarkdown(messages []Message) ([]byte, error) {
-	var md string
-	md += fmt.Sprintf("# Conversation Export\n\n")
-	md += fmt.Sprintf("**Exported:** %s\n\n", time.Now().Format("2006-01-02 15:04:05"))
-	md += "---\n\n"
+func (s *SaveCommand) exportAsMarkdown(messages []state.Message) ([]byte, error) {
+	var md strings.Builder
+	md.WriteString(fmt.Sprintf("# Conversation Export\n\n"))
+	md.WriteString(fmt.Sprintf("**Exported:** %s\n\n", time.Now().Format("2006-01-02 15:04:05")))
+	md.WriteString(fmt.Sprintf("**Session ID:** %s\n\n", state.GlobalState.SessionID))
+	md.WriteString("---\n\n")
 
 	for _, msg := range messages {
 		role := msg.Role
+		if role == "" {
+			role = msg.Type
+		}
 		if role == "" {
 			role = "unknown"
 		}
 
 		switch role {
 		case "user":
-			md += fmt.Sprintf("## User\n\n%s\n\n", msg.Content)
+			md.WriteString(fmt.Sprintf("## User\n\n%s\n\n", msg.Content))
 		case "assistant":
-			md += fmt.Sprintf("## Assistant\n\n%s\n\n", msg.Content)
+			md.WriteString(fmt.Sprintf("## Assistant\n\n%s\n\n", msg.Content))
 		case "system":
-			md += fmt.Sprintf("## System\n\n%s\n\n", msg.Content)
+			md.WriteString(fmt.Sprintf("## System\n\n%s\n\n", msg.Content))
 		default:
-			md += fmt.Sprintf("## %s\n\n%s\n\n", capitalize(role), msg.Content)
+			md.WriteString(fmt.Sprintf("## %s\n\n%s\n\n", capitalize(role), msg.Content))
 		}
 	}
 
-	return []byte(md), nil
-}
-
-// Helper functions
-func hasExtension(filename, ext string) bool {
-	if len(filename) < len(ext) {
-		return false
-	}
-	return filename[len(filename)-len(ext):] == ext
+	return []byte(md.String()), nil
 }
 
 func capitalize(s string) string {
@@ -178,4 +188,4 @@ func capitalize(s string) string {
 	return string(first) + s[1:]
 }
 
-func init() { Register(NewSaveCommand(nil)) }
+func init() { Register(NewSaveCommand()) }

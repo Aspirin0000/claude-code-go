@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -32,6 +33,8 @@ var ConfigDefinitions = []ConfigMeta{
 	{Key: "theme", Type: "string", Default: "dark", Description: "界面主题 (dark/light)"},
 	{Key: "verbose", Type: "bool", Default: false, Description: "启用详细日志输出"},
 	{Key: "provider", Type: "string", Default: "anthropic", Description: "API提供商"},
+	{Key: "auto_save", Type: "bool", Default: true, Description: "启用自动保存功能"},
+	{Key: "auto_save_dir", Type: "string", Default: "", Description: "自动保存目录路径"},
 }
 
 // NewConfigCommand creates a new config command
@@ -58,6 +61,8 @@ func NewConfigCommand() *ConfigCommand {
   theme           - 界面主题 (dark/light)
   verbose         - 启用详细日志输出 (true/false)
   provider        - API提供商
+  auto_save       - 启用自动保存 (true/false)
+  auto_save_dir   - 自动保存目录路径
 
 使用点符号访问嵌套配置:
   /config get mcp.timeout
@@ -128,6 +133,12 @@ func (c *ConfigCommand) showAllConfig() error {
 	c.printConfigLine("theme", cfg.Theme, defaultCfg.Theme, cfg.Theme != defaultCfg.Theme)
 	c.printConfigLine("verbose", fmt.Sprintf("%v", cfg.Verbose), fmt.Sprintf("%v", defaultCfg.Verbose), cfg.Verbose != defaultCfg.Verbose)
 	c.printConfigLine("provider", cfg.Provider, defaultCfg.Provider, cfg.Provider != defaultCfg.Provider)
+	c.printConfigLine("auto_save", fmt.Sprintf("%v", cfg.AutoSave), fmt.Sprintf("%v", defaultCfg.AutoSave), cfg.AutoSave != defaultCfg.AutoSave)
+	autoSaveDir := cfg.AutoSaveDir
+	if autoSaveDir == "" {
+		autoSaveDir = "(默认)"
+	}
+	c.printConfigLine("auto_save_dir", autoSaveDir, "", cfg.AutoSaveDir != "")
 
 	// Environment variables
 	if len(cfg.Env) > 0 {
@@ -382,6 +393,13 @@ func (c *ConfigCommand) setConfig(key, value string) error {
 		}
 	}
 
+	// Validate auto_save_dir path
+	if key == "auto_save_dir" && value != "" {
+		if err := c.validateAutoSaveDir(value); err != nil {
+			return err
+		}
+	}
+
 	configPath := config.GetConfigPath()
 	cfg, err := config.Load(configPath)
 	if err != nil {
@@ -492,7 +510,41 @@ func (c *ConfigCommand) setNestedConfig(cfg *config.Config, key, value string) e
 	}
 }
 
-// validateValueType validates the value against the expected type
+// validateAutoSaveDir validates the auto_save_dir path
+func (c *ConfigCommand) validateAutoSaveDir(path string) error {
+	if path == "" {
+		return nil
+	}
+
+	// Check if path is absolute
+	if !filepath.IsAbs(path) {
+		return fmt.Errorf("auto_save_dir 必须是绝对路径，不能是相对路径: %s", path)
+	}
+
+	// Check if parent directory exists
+	parent := filepath.Dir(path)
+	info, err := os.Stat(parent)
+	if err != nil {
+		return fmt.Errorf("无法访问父目录 '%s': %w", parent, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("'%s' 不是目录", parent)
+	}
+
+	// Try to create the directory if it doesn't exist
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// Check if we can create it
+		if err := os.MkdirAll(path, 0755); err != nil {
+			return fmt.Errorf("无法创建自动保存目录 '%s': %w", path, err)
+		}
+		// Clean up the test directory if it was created empty
+		if dir, _ := os.ReadDir(path); len(dir) == 0 {
+			os.Remove(path)
+		}
+	}
+
+	return nil
+}
 func (c *ConfigCommand) validateValueType(value, expectedType string) error {
 	switch expectedType {
 	case "bool":
