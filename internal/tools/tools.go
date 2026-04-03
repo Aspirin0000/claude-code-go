@@ -524,6 +524,7 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&TaskCreateTool{})
 	registry.Register(&TaskUpdateTool{})
 	registry.Register(&TaskStopTool{})
+	registry.Register(&TaskListTool{})
 	registry.Register(&AgentTool{})
 
 	return registry
