@@ -7,10 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Aspirin0000/claude-code-go/internal/api"
+	"github.com/Aspirin0000/claude-code-go/internal/config"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
 )
 
-// CompactCommand compacts conversation history by summarizing old messages
+// CompactCommand compacts conversation history by summarizing old messages using AI
 type CompactCommand struct {
 	*BaseCommand
 }
@@ -20,25 +22,25 @@ func NewCompactCommand() *CompactCommand {
 	return &CompactCommand{
 		BaseCommand: NewBaseCommand(
 			"compact",
-			"压缩会话历史，将旧消息总结为摘要",
+			"Compact conversation history by summarizing old messages with AI",
 			CategorySession,
 		).WithAliases("compress", "summary").
-			WithHelp(`使用: /compact [保留消息数]
+			WithHelp(`Usage: /compact [messages_to_keep]
 
-压缩会话历史记录，将较早的消息总结为摘要。
-这有助于管理长对话，减少上下文窗口的使用。
+Compress conversation history by summarizing older messages using AI.
+This helps manage long conversations and reduce context window usage.
 
-参数:
-  [保留消息数]  可选，保留最近的消息数量 (默认: 10)
+Arguments:
+  [messages_to_keep]  Optional, number of recent messages to keep (default: 10)
 
-示例:
-  /compact        # 保留最近10条消息，总结其余
-  /compact 5      # 保留最近5条消息，总结其余
-  /compact 20     # 保留最近20条消息，总结其余
+Examples:
+  /compact        # Keep last 10 messages, summarize the rest
+  /compact 5      # Keep last 5 messages, summarize the rest
+  /compact 20     # Keep last 20 messages, summarize the rest
 
-别名: /compress, /summary
+Aliases: /compress, /summary
 
-注意: 压缩后会话历史将被修改，无法恢复原始消息。`),
+Note: After compression, conversation history will be modified and original messages cannot be restored.`),
 	}
 }
 
@@ -75,8 +77,15 @@ func (c *CompactCommand) Execute(ctx context.Context, args []string) error {
 	oldMessages := messages[:len(messages)-keepCount]
 	recentMessages := messages[len(messages)-keepCount:]
 
-	// Generate summary of old messages
-	summary := generateSummary(oldMessages)
+	fmt.Printf("🔄 Summarizing %d messages using AI...\n", len(oldMessages))
+
+	// Generate AI summary of old messages
+	summary, err := c.generateAISummary(ctx, oldMessages)
+	if err != nil {
+		// Fallback to heuristic summary if AI fails
+		fmt.Printf("⚠️  AI summary failed (%v), using heuristic summary instead\n", err)
+		summary = generateHeuristicSummary(oldMessages)
+	}
 
 	// Create new message list: summary + recent messages
 	newMessages := make([]state.Message, 0, len(recentMessages)+1)
@@ -114,6 +123,80 @@ func (c *CompactCommand) Execute(ctx context.Context, args []string) error {
 	return nil
 }
 
+// generateAISummary uses AI to generate a proper conversation summary
+func (c *CompactCommand) generateAISummary(ctx context.Context, messages []state.Message) (string, error) {
+	// Load configuration
+	cfgPath := config.GetConfigPath()
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to load config: %w", err)
+	}
+
+	if cfg.APIKey == "" {
+		return "", fmt.Errorf("no API key configured")
+	}
+
+	// Create API client
+	client := api.NewClient(cfg.APIKey, cfg.Model)
+	if cfg.Provider != "" {
+		client.SetProvider(cfg.Provider)
+	}
+
+	// Build conversation text for summarization
+	var conversationText strings.Builder
+	for _, msg := range messages {
+		role := msg.Role
+		if role == "" {
+			role = msg.Type
+		}
+		conversationText.WriteString(fmt.Sprintf("\n[%s]: %s\n", strings.ToUpper(role), msg.Content))
+	}
+
+	// Create summarization prompt
+	summaryPrompt := fmt.Sprintf(`Please provide a comprehensive summary of the following conversation. 
+
+Focus on:
+1. Key topics discussed
+2. Important decisions made
+3. Files or code referenced
+4. Current context and state
+5. Any unresolved questions or next steps
+
+Format the summary in markdown with clear sections.
+
+Conversation to summarize:
+%s
+
+Please provide a concise but comprehensive summary:`, conversationText.String())
+
+	// Prepare messages for API call
+	apiMessages := []api.Message{
+		{
+			Role:    "user",
+			Content: summaryPrompt,
+		},
+	}
+
+	// Call AI API
+	resp, err := client.Chat(ctx, apiMessages, nil)
+	if err != nil {
+		return "", fmt.Errorf("API call failed: %w", err)
+	}
+
+	// Format the summary with metadata
+	var summary strings.Builder
+	summary.WriteString("## Previous Conversation Summary\n\n")
+	summary.WriteString(fmt.Sprintf("*Generated on %s*\n\n", time.Now().Format("2006-01-02 15:04:05")))
+	summary.WriteString(fmt.Sprintf("*Original message count: %d*\n\n", len(messages)))
+	summary.WriteString(resp.Content)
+	summary.WriteString("\n\n")
+	summary.WriteString("### Current Context\n")
+	summary.WriteString(fmt.Sprintf("- Working directory: %s\n", state.GlobalState.CWD))
+	summary.WriteString(fmt.Sprintf("- Session ID: %s\n", state.GlobalState.SessionID))
+
+	return summary.String(), nil
+}
+
 // estimateTokens estimates token count (rough approximation: 1 token ≈ 4 characters)
 func estimateTokens(messages []state.Message) int {
 	totalChars := 0
@@ -125,11 +208,11 @@ func estimateTokens(messages []state.Message) int {
 	return totalChars / 4
 }
 
-// generateSummary generates a summary of old messages
-func generateSummary(messages []state.Message) string {
+// generateHeuristicSummary generates a summary using local heuristics (fallback)
+func generateHeuristicSummary(messages []state.Message) string {
 	var sb strings.Builder
 
-	sb.WriteString("## Previous Conversation Summary\n\n")
+	sb.WriteString("## Previous Conversation Summary (Heuristic)\n\n")
 	sb.WriteString(fmt.Sprintf("*Generated on %s*\n\n", time.Now().Format("2006-01-02 15:04:05")))
 	sb.WriteString(fmt.Sprintf("*Original message count: %d*\n\n", len(messages)))
 
