@@ -40,20 +40,30 @@ Evidence: `internal/tools/` (6 files, ~1,800 lines)
 - ✅ **registry.go** - Tool registry with schema support
 
 **Completed Tools (14/55 - 25%):**
-1. ✅ BashTool - Safe shell execution with timeout and danger detection
-2. ✅ FileReadTool - Read file content with line range support
-3. ✅ FileWriteTool - Write/create files
-4. ✅ FileEditTool - Search and replace editing
-5. ✅ GrepTool - Parallel search using ripgrep
-6. ✅ GlobTool - File pattern matching
-7. ✅ TodoWriteTool - Todo management (basic implementation)
-8. ✅ WebFetchTool - Fetch web content using curl
-9. ✅ NotebookEditTool - Jupyter Notebook editing (CRUD operations)
-10. ✅ TaskGetTool - Get task information
-11. ✅ TaskCreateTool - Create new tasks
-12. ✅ TaskUpdateTool - Update task status
-13. ✅ TaskStopTool - Stop/cancel tasks
-14. ✅ TaskListTool - List all tasks with filtering
+1. ✅ **BashTool** - Safe shell execution with timeout and danger detection
+2. ✅ **FileReadTool** - Read file content with line range support
+3. ✅ **FileWriteTool** - Write/create files
+4. ✅ **FileEditTool** - Search and replace editing
+5. ✅ **GrepTool** - Parallel search using ripgrep
+6. ✅ **GlobTool** - File pattern matching
+7. ✅ **TodoWriteTool** - Todo management (basic implementation)
+8. ✅ **WebFetchTool** - Fetch web content using curl
+9. ✅ **NotebookEditTool** - Jupyter Notebook editing (CRUD operations)
+10. ✅ **TaskGetTool** - Get task information
+11. ✅ **TaskCreateTool** - Create new tasks
+12. ✅ **TaskUpdateTool** - Update task status
+13. ✅ **TaskStopTool** - Stop/cancel tasks
+14. ✅ **TaskListTool** - List all tasks with filtering
+
+**New Commands Added:**
+- ✅ `/sessions` - Manage auto-saved sessions
+- ✅ `/tools` - List available AI tools
+
+**Recent Improvements:**
+- ✅ Auto-save session management with configurable settings
+- ✅ Complete help system in English
+- ✅ Format string errors fixed in git.go and permissions.go
+- ✅ Unit tests for command system
 
 **Pending Tools:**
 - ⚠️ WebSearchTool - Requires search engine API configuration

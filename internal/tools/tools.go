@@ -527,5 +527,10 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&TaskListTool{})
 	registry.Register(&AgentTool{})
 
+	// MCP 工具
+	registry.Register(&ListMcpResourcesTool{})
+	registry.Register(&ReadMcpResourceTool{})
+	registry.Register(&McpTool{})
+
 	return registry
 }
