@@ -719,6 +719,84 @@ func (w *WebFetchTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	return json.Marshal(result)
 }
 
+// FileDeleteTool File deletion tool
+type FileDeleteTool struct{}
+
+func (f *FileDeleteTool) Name() string        { return "file_delete" }
+func (f *FileDeleteTool) Description() string { return "Delete a file or empty directory" }
+func (f *FileDeleteTool) IsReadOnly() bool    { return false }
+func (f *FileDeleteTool) IsDestructive() bool { return true }
+
+func (f *FileDeleteTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Path to delete"}
+		},
+		"required": ["path"]
+	}`)
+}
+
+func (f *FileDeleteTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	if err := os.Remove(params.Path); err != nil {
+		return nil, fmt.Errorf("failed to delete: %w", err)
+	}
+
+	return json.Marshal(struct {
+		Success bool   `json:"success"`
+		Path    string `json:"path"`
+	}{
+		Success: true,
+		Path:    params.Path,
+	})
+}
+
+// DirWriteTool Directory creation tool
+type DirWriteTool struct{}
+
+func (d *DirWriteTool) Name() string        { return "dir_write" }
+func (d *DirWriteTool) Description() string { return "Create a directory (including parents)" }
+func (d *DirWriteTool) IsReadOnly() bool    { return false }
+func (d *DirWriteTool) IsDestructive() bool { return false }
+
+func (d *DirWriteTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Directory path to create"}
+		},
+		"required": ["path"]
+	}`)
+}
+
+func (d *DirWriteTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	if err := os.MkdirAll(params.Path, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	return json.Marshal(struct {
+		Success bool   `json:"success"`
+		Path    string `json:"path"`
+	}{
+		Success: true,
+		Path:    params.Path,
+	})
+}
+
 // NewDefaultRegistry creates a registry with the default tools
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -734,6 +812,8 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&WebSearchTool{})
 	registry.Register(&WebFetchTool{})
 	registry.Register(&ThinkTool{})
+	registry.Register(&FileDeleteTool{})
+	registry.Register(&DirWriteTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})

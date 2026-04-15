@@ -173,3 +173,62 @@ func TestWebFetchTool(t *testing.T) {
 		t.Log("warning: empty content from example.com")
 	}
 }
+
+func TestFileDeleteTool(t *testing.T) {
+	tool := &FileDeleteTool{}
+	tmpFile := filepath.Join(t.TempDir(), "to_delete.txt")
+	os.WriteFile(tmpFile, []byte("delete me"), 0644)
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path": tmpFile,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Success bool   `json:"success"`
+		Path    string `json:"path"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if !parsed.Success {
+		t.Errorf("expected success")
+	}
+	if _, statErr := os.Stat(tmpFile); !os.IsNotExist(statErr) {
+		t.Errorf("expected file to be deleted")
+	}
+}
+
+func TestDirWriteTool(t *testing.T) {
+	tool := &DirWriteTool{}
+	tmpDir := filepath.Join(t.TempDir(), "nested", "dir")
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path": tmpDir,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Success bool   `json:"success"`
+		Path    string `json:"path"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if !parsed.Success {
+		t.Errorf("expected success")
+	}
+	if info, statErr := os.Stat(tmpDir); statErr != nil || !info.IsDir() {
+		t.Errorf("expected directory to be created")
+	}
+}
