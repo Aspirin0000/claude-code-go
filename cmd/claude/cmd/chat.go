@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -18,6 +17,7 @@ import (
 	"github.com/Aspirin0000/claude-code-go/internal/tools"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/chzyer/readline"
 	"github.com/spf13/cobra"
 )
 
@@ -133,16 +133,30 @@ func runSimpleREPL() error {
 
 	printWelcome()
 
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Print("\n❯ ")
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:          "\n❯ ",
+		HistoryFile:     "/tmp/claude_code_go_history.tmp",
+		AutoComplete:    nil,
+		InterruptPrompt: "^C",
+		EOFPrompt:       "exit",
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize readline: %w", err)
+	}
+	defer rl.Close()
 
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			if err.Error() == "EOF" {
-				fmt.Println("\n👋 Goodbye!")
-				return nil
+	for {
+		input, err := rl.Readline()
+		if err == readline.ErrInterrupt {
+			if len(input) > 0 {
+				continue
 			}
+			fmt.Println("\n👋 Goodbye!")
+			return nil
+		} else if err == io.EOF {
+			fmt.Println("\n👋 Goodbye!")
+			return nil
+		} else if err != nil {
 			return fmt.Errorf("read error: %w", err)
 		}
 
