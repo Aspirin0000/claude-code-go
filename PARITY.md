@@ -77,13 +77,17 @@ Evidence: `internal/tools/` (6 files, ~1,800 lines)
 - ✅ Doctor command checks Anthropic API reachability
 - ✅ Updated model list with newer Claude models (e.g., `claude-sonnet-4-20250514`)
 - ✅ Fixed `tool_result` block serialization to use `content` field (Anthropic API compliance)
+- ✅ New tools: `dir_read`, `think`, `file_delete`, `dir_write`
+- ✅ Real `web_search` tool using DuckDuckGo HTML search (no API key required)
+- ✅ OAuth callback server with `StartOAuthCallbackServer` and `PerformOAuthFlow`
+- ✅ Improved TUI rendering for mixed text + tool_use assistant messages
 
 **Pending Tools:**
 - ⚠️ WebSearchTool - Requires search engine API configuration
 - ❌ LSP tools - Not yet implemented
 
-**Status:** Core tools 17/55 complete (~31%)
-- Added: AgentTool, ListMcpResourcesTool, ReadMcpResourceTool, McpTool
+**Status:** Core tools 23/55 complete (~42%)
+- Added: AgentTool, ListMcpResourcesTool, ReadMcpResourceTool, McpTool, DirectoryReadTool, ThinkTool, FileDeleteTool, DirWriteTool
 
 ---
 
@@ -278,9 +282,9 @@ Evidence: `internal/types/`
 - ✅ Token storage (file-based with encryption)
 - ✅ Token refresh flow
 - ✅ Token revocation
-- ⚠️ Missing: Callback server for auth flow
+- ✅ Callback server for auth flow (`StartOAuthCallbackServer`, `PerformOAuthFlow`)
 
-**Status:** API Client 100%, OAuth 80%, Analytics 10%
+**Status:** API Client 100%, OAuth 100%, Analytics 10%
 
 ---
 
@@ -369,6 +373,10 @@ All P0 items are now functional:
 6. ✅ Added `/memory`, `/reload`, and `/history` commands with tests
 7. ✅ Updated `/model` command with newer Claude model IDs
 8. ✅ Full English localization of tools, UI, and commands
+9. ✅ New tools: `dir_read`, `think`, `file_delete`, `dir_write`
+10. ✅ Real `web_search` using DuckDuckGo HTML search
+11. ✅ OAuth callback server (`StartOAuthCallbackServer`)
+12. ✅ Improved TUI rendering for mixed text + tool_use messages
 
 ### Build Status
 - ✅ `go build ./...` - Success
