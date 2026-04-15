@@ -77,17 +77,19 @@ Evidence: `internal/tools/` (6 files, ~1,800 lines)
 - ✅ Doctor command checks Anthropic API reachability
 - ✅ Updated model list with newer Claude models (e.g., `claude-sonnet-4-20250514`)
 - ✅ Fixed `tool_result` block serialization to use `content` field (Anthropic API compliance)
-- ✅ New tools: `dir_read`, `think`, `file_delete`, `dir_write`
+- ✅ New tools: `dir_read`, `think`, `file_delete`, `dir_write`, `file_move`, `git_status`, `git_diff`, `git_log`, `git_commit`
 - ✅ Real `web_search` tool using DuckDuckGo HTML search (no API key required)
 - ✅ OAuth callback server with `StartOAuthCallbackServer` and `PerformOAuthFlow`
 - ✅ Improved TUI rendering for mixed text + tool_use assistant messages
+- ✅ REPL readline integration for history and line editing
+- ✅ API client tests with mock server
 
 **Pending Tools:**
 - ⚠️ WebSearchTool - Requires search engine API configuration
 - ❌ LSP tools - Not yet implemented
 
-**Status:** Core tools 23/55 complete (~42%)
-- Added: AgentTool, ListMcpResourcesTool, ReadMcpResourceTool, McpTool, DirectoryReadTool, ThinkTool, FileDeleteTool, DirWriteTool
+**Status:** Core tools 28/55 complete (~51%)
+- Added: AgentTool, ListMcpResourcesTool, ReadMcpResourceTool, McpTool, DirectoryReadTool, ThinkTool, FileDeleteTool, DirWriteTool, FileMoveTool, GitStatusTool, GitDiffTool, GitLogTool, GitCommitTool
 
 ---
 
@@ -322,8 +324,8 @@ Evidence: `internal/types/`
 
 ### Missing
 - ❌ Integration tests
-- ❌ API client tests
-- ❌ Tool execution tests
+- ✅ API client tests
+- ✅ Tool execution tests
 - ❌ End-to-end tests
 
 ---
@@ -373,10 +375,12 @@ All P0 items are now functional:
 6. ✅ Added `/memory`, `/reload`, and `/history` commands with tests
 7. ✅ Updated `/model` command with newer Claude model IDs
 8. ✅ Full English localization of tools, UI, and commands
-9. ✅ New tools: `dir_read`, `think`, `file_delete`, `dir_write`
+9. ✅ New tools: `dir_read`, `think`, `file_delete`, `dir_write`, `file_move`, `git_status`, `git_diff`, `git_log`, `git_commit`
 10. ✅ Real `web_search` using DuckDuckGo HTML search
 11. ✅ OAuth callback server (`StartOAuthCallbackServer`)
 12. ✅ Improved TUI rendering for mixed text + tool_use messages
+13. ✅ REPL readline integration
+14. ✅ API client tests with mock server
 
 ### Build Status
 - ✅ `go build ./...` - Success
