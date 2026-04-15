@@ -476,8 +476,9 @@ All P0 items are now functional:
 52. ✅ Added unit tests for git command (IsGitRepo, branch, log, diff, status, remote)
 53. ✅ Added unit tests for tools command (default, core/search/task/web/mcp filters)
 54. ✅ Added unit tests for MCP commands (overview, list, status, add, remove)
-55. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-56. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+55. ✅ Added unit tests for compact command (args, no messages, heuristic summary, extract functions)
+56. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+57. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
