@@ -478,8 +478,11 @@ All P0 items are now functional:
 54. ✅ Added unit tests for MCP commands (overview, list, status, add, remove)
 55. ✅ Added unit tests for compact command (args, no messages, heuristic summary, extract functions)
 56. ✅ Added unit tests for exit command (metadata, aliases, category)
-57. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-58. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+57. ✅ Implemented `/login` command to save Anthropic API key to config
+58. ✅ Implemented `/logout` command to clear saved API key from config
+59. ✅ Added login/logout command tests with CLAUDE_CONFIG_DIR isolation
+60. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+61. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
