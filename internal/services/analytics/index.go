@@ -104,15 +104,18 @@ func AttachAnalyticsSink(newSink AnalyticsSink) {
 		}
 
 		// Drain asynchronously
-		go func() {
+		go func(s AnalyticsSink) {
 			for _, event := range queuedEvents {
+				if s == nil {
+					break
+				}
 				if event.Async {
-					_ = sink.LogEventAsync(event.EventName, event.Metadata)
+					_ = s.LogEventAsync(event.EventName, event.Metadata)
 				} else {
-					sink.LogEvent(event.EventName, event.Metadata)
+					s.LogEvent(event.EventName, event.Metadata)
 				}
 			}
-		}()
+		}(sink)
 	}
 }
 
