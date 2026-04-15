@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -188,25 +187,9 @@ func TestModelCommandSwitchModelWithTempConfig(t *testing.T) {
 	cmd := NewModelCommand()
 	ctx := context.Background()
 
-	// Create temp dir and config file
+	// Use temp config dir via CLAUDE_CONFIG_DIR for isolation
 	tmpDir := t.TempDir()
-
-	// We monkey-patch config loading by overriding the config path indirectly
-	// config.GetConfigPath uses os.UserConfigDir, which we can't override easily
-	// So we test via setting env var to bypass config file
-	t.Setenv("CLAUDE_CODE_MODEL", "")
-
-	// The command will load from real config path, which may have a previous value.
-	// To ensure a clean test, write to the actual config path with our temp dir
-	// by temporarily changing UserConfigDir behavior via XDG_CONFIG_HOME on Unix
-	// or LOCALAPPDATA on Windows
-	if os.Getenv("XDG_CONFIG_HOME") == "" {
-		t.Setenv("XDG_CONFIG_HOME", tmpDir)
-	} else {
-		// If already set, we can't easily override for just this test without side effects
-		// Skip this part of the test
-		t.Skip("XDG_CONFIG_HOME already set, skipping config file test")
-	}
+	t.Setenv("CLAUDE_CONFIG_DIR", tmpDir)
 
 	// Verify config path uses temp dir
 	cp := config.GetConfigPath()

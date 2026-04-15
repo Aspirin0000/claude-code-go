@@ -84,8 +84,12 @@ func (c *Config) Save(path string) error {
 	return nil
 }
 
-// GetConfigPath returns the configuration file path
+// GetConfigPath returns the configuration file path.
+// Respects CLAUDE_CONFIG_DIR environment variable for testing.
 func GetConfigPath() string {
+	if dir := os.Getenv("CLAUDE_CONFIG_DIR"); dir != "" {
+		return filepath.Join(dir, "config.json")
+	}
 	configDir, err := os.UserConfigDir()
 	if err != nil {
 		configDir = "."

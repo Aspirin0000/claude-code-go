@@ -463,7 +463,10 @@ All P0 items are now functional:
 39. ✅ Added unit tests for help, glob, and grep commands
 40. ✅ Added unit tests for tasks command (add, done, remove, priority, tags, clear)
 41. ✅ Refactored tasks command to support file path injection for testing
-42. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+42. ✅ Added unit tests for config command (maskAPIKey, get/set, nested env)
+43. ✅ Added unit tests for status command (formatDuration, estimateTokensForText, execution)
+44. ✅ Added `CLAUDE_CONFIG_DIR` env var support for test-isolated config paths
+45. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
