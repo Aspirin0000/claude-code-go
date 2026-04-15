@@ -4,8 +4,10 @@
 package analytics
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -234,5 +236,76 @@ func formatValue(v interface{}) string {
 		return "false"
 	default:
 		return ""
+	}
+}
+
+// FileSink writes analytics events to a JSON Lines file.
+type FileSink struct {
+	path   string
+	mu     sync.Mutex
+	file   *os.File
+	closed bool
+}
+
+// NewFileSink creates a file sink at the given path.
+func NewFileSink(path string) (*FileSink, error) {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return &FileSink{path: path, file: f}, nil
+}
+
+// LogEvent writes an event to the file.
+func (fs *FileSink) LogEvent(eventName string, metadata LogEventMetadata) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	if fs.closed || fs.file == nil {
+		return
+	}
+
+	record := map[string]interface{}{
+		"timestamp": time.Now().UTC().Format(time.RFC3339Nano),
+		"event":     eventName,
+		"metadata":  metadata,
+	}
+
+	b, _ := json.Marshal(record)
+	_, _ = fs.file.Write(b)
+	_, _ = fs.file.WriteString("\n")
+}
+
+// LogEventAsync writes an event asynchronously.
+func (fs *FileSink) LogEventAsync(eventName string, metadata LogEventMetadata) error {
+	fs.LogEvent(eventName, metadata)
+	return nil
+}
+
+// Close flushes and closes the underlying file.
+func (fs *FileSink) Close() error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+	fs.closed = true
+	if fs.file != nil {
+		return fs.file.Close()
+	}
+	return nil
+}
+
+// InitDefaultSink attaches a default analytics sink.
+// It prefers a file sink in the user's config directory; falls back to console.
+func InitDefaultSink() {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		configDir = "."
+	}
+	analyticsDir := filepath.Join(configDir, "claude", "analytics")
+	_ = os.MkdirAll(analyticsDir, 0755)
+
+	path := filepath.Join(analyticsDir, "events.jsonl")
+	if sink, err := NewFileSink(path); err == nil {
+		AttachAnalyticsSink(sink)
+	} else {
+		AttachAnalyticsSink(NewConsoleSink("[Analytics]"))
 	}
 }

@@ -8,12 +8,14 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Aspirin0000/claude-code-go/cmd/claude/commands"
 	"github.com/Aspirin0000/claude-code-go/internal/api"
 	"github.com/Aspirin0000/claude-code-go/internal/config"
 	"github.com/Aspirin0000/claude-code-go/internal/hooks"
 	"github.com/Aspirin0000/claude-code-go/internal/mcp"
+	"github.com/Aspirin0000/claude-code-go/internal/services/analytics"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
 	"github.com/Aspirin0000/claude-code-go/internal/tools"
 	"github.com/Aspirin0000/claude-code-go/internal/types"
@@ -146,6 +148,11 @@ func runSimpleREPL() error {
 
 	printWelcome()
 
+	analytics.InitDefaultSink()
+	analytics.LogEvent("session_started", analytics.LogEventMetadata{
+		"mode": "repl",
+	})
+
 	historyFile := filepath.Join(utils.GetClaudeConfigHomeDir(), "repl_history")
 
 	// Build slash command completer
@@ -266,6 +273,10 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 		Content: message,
 	})
 
+	analytics.LogEvent("chat_message_sent", analytics.LogEventMetadata{
+		"mode": "repl",
+	})
+
 	toolsList := buildToolsList(registry)
 	const maxRounds = 10
 
@@ -277,10 +288,24 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 		}
 
 		apiMessages := buildAPIMessagesFromState()
+		start := time.Now()
 		resp, err := client.ChatWithBlocks(ctx, apiMessages, toolsList)
+		duration := time.Since(start).Milliseconds()
 		if err != nil {
+			analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
+				"success":     false,
+				"duration_ms": duration,
+				"model":       client.GetModel(),
+				"error":       err.Error(),
+			})
 			return fmt.Errorf("API error: %w", err)
 		}
+		analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
+			"success":     true,
+			"duration_ms": duration,
+			"model":       client.GetModel(),
+			"blocks":      len(resp.Content),
+		})
 
 		var textParts []string
 		var toolUses []api.ContentBlock
@@ -353,7 +378,11 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 	}
 
 	if state.GlobalSessionStorage != nil {
-		_ = state.GlobalSessionStorage.AutoSave(state.GlobalState)
+		if err := state.GlobalSessionStorage.AutoSave(state.GlobalState); err == nil {
+			analytics.LogEvent("session_autosaved", analytics.LogEventMetadata{
+				"mode": "repl",
+			})
+		}
 	}
 
 	return nil
@@ -477,6 +506,11 @@ func NewApp() *App {
 			}
 		}
 	}
+
+	analytics.InitDefaultSink()
+	analytics.LogEvent("session_started", analytics.LogEventMetadata{
+		"mode": "tui",
+	})
 
 	return &App{
 		config:       cfg,
@@ -640,6 +674,9 @@ func (a *App) handleInput() (tea.Model, tea.Cmd) {
 		Type:    "user",
 		Content: input,
 	})
+	analytics.LogEvent("chat_message_sent", analytics.LogEventMetadata{
+		"mode": "tui",
+	})
 	a.inputHistory = append(a.inputHistory, a.input)
 	a.historyIndex = len(a.inputHistory)
 	a.loading = true
@@ -663,10 +700,24 @@ func (a *App) processMessage() tea.Cmd {
 
 		for round := 0; round < maxRounds; round++ {
 			apiMessages := buildAPIMessagesFromState()
+			start := time.Now()
 			resp, err := a.apiClient.ChatWithBlocks(context.Background(), apiMessages, toolsList)
+			duration := time.Since(start).Milliseconds()
 			if err != nil {
+				analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
+					"success":     false,
+					"duration_ms": duration,
+					"model":       a.apiClient.GetModel(),
+					"error":       err.Error(),
+				})
 				return apiResponseMsg{err: err}
 			}
+			analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
+				"success":     true,
+				"duration_ms": duration,
+				"model":       a.apiClient.GetModel(),
+				"blocks":      len(resp.Content),
+			})
 
 			var textParts []string
 			var toolUses []api.ContentBlock
@@ -770,6 +821,12 @@ func executeTool(ctx context.Context, registry *tools.Registry, toolName string,
 			return "", fmt.Errorf("hook error: %w", err)
 		}
 		if !result.Continue || result.Decision == types.PermissionBehaviorDeny {
+			analytics.LogEvent("tool_executed", analytics.LogEventMetadata{
+				"tool_name": toolName,
+				"success":   false,
+				"blocked":   true,
+				"reason":    result.DecisionReason,
+			})
 			return "", fmt.Errorf("tool use blocked by hook: %s", result.DecisionReason)
 		}
 		if len(result.UpdatedInput) > 0 {
@@ -779,32 +836,50 @@ func executeTool(ctx context.Context, registry *tools.Registry, toolName string,
 		}
 	}
 
+	start := time.Now()
+	var resultText string
+	var execErr error
+
 	if strings.HasPrefix(toolName, "mcp__") {
 		var arguments map[string]interface{}
 		if len(input) > 0 {
 			if err := json.Unmarshal(input, &arguments); err != nil {
-				return "", fmt.Errorf("failed to parse MCP tool arguments: %w", err)
+				execErr = fmt.Errorf("failed to parse MCP tool arguments: %w", err)
 			}
 		}
-		result, err := mcp.GetGlobalMCPManager().ExecuteTool(ctx, toolName, arguments)
+		if execErr == nil {
+			result, err := mcp.GetGlobalMCPManager().ExecuteTool(ctx, toolName, arguments)
+			if err != nil {
+				execErr = err
+			} else {
+				var parts []string
+				for _, block := range result.Content {
+					if block.Type == "text" {
+						parts = append(parts, block.Text)
+					}
+				}
+				resultText = strings.Join(parts, "\n")
+			}
+		}
+	} else {
+		result, err := registry.Call(ctx, toolName, input)
 		if err != nil {
-			return "", err
+			execErr = err
+		} else if !result.Success {
+			execErr = fmt.Errorf("%s", result.Error)
+		} else {
+			resultText = string(result.Data)
 		}
-		var parts []string
-		for _, block := range result.Content {
-			if block.Type == "text" {
-				parts = append(parts, block.Text)
-			}
-		}
-		return strings.Join(parts, "\n"), nil
 	}
 
-	result, err := registry.Call(ctx, toolName, input)
-	if err != nil {
-		return "", err
+	analytics.LogEvent("tool_executed", analytics.LogEventMetadata{
+		"tool_name":   toolName,
+		"success":     execErr == nil,
+		"duration_ms": time.Since(start).Milliseconds(),
+	})
+
+	if execErr != nil {
+		return "", execErr
 	}
-	if !result.Success {
-		return "", fmt.Errorf("%s", result.Error)
-	}
-	return string(result.Data), nil
+	return resultText, nil
 }

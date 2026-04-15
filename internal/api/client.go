@@ -18,6 +18,7 @@ type Client struct {
 	apiKey     string
 	baseURL    string
 	model      string
+	provider   string
 	httpClient *http.Client
 }
 
@@ -301,6 +302,7 @@ func (c *Client) ChatStream(ctx context.Context, messages []Message, tools []Too
 
 // SetProvider sets the API provider.
 func (c *Client) SetProvider(provider string) {
+	c.provider = provider
 	switch provider {
 	case "anthropic":
 		c.baseURL = "https://api.anthropic.com/v1"
@@ -309,4 +311,14 @@ func (c *Client) SetProvider(provider string) {
 	case "vertex":
 		c.baseURL = "https://us-central1-aiplatform.googleapis.com"
 	}
+}
+
+// GetModel returns the client's model.
+func (c *Client) GetModel() string {
+	return c.model
+}
+
+// GetProvider returns the client's provider.
+func (c *Client) GetProvider() string {
+	return c.provider
 }

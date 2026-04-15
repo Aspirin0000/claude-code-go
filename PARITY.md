@@ -318,7 +318,9 @@ Evidence: `internal/types/`
 ### Go Implementation
 - ✅ **internal/api/client.go** - Anthropic API client with streaming
 - ✅ **internal/mcp/** - MCP client (95% complete)
-- ⚠️ internal/services/analytics/ - Skeleton
+- ✅ **internal/services/analytics/** - Event tracking with ConsoleSink and FileSink
+  - Session, chat message, API request, tool execution, and auto-save telemetry
+  - Automatic JSON Lines event logging to user config directory
 
 ### API Client Features
 - Chat completions with tool support
@@ -334,7 +336,7 @@ Evidence: `internal/types/`
 - ✅ Token revocation
 - ✅ Callback server for auth flow (`StartOAuthCallbackServer`, `PerformOAuthFlow`)
 
-**Status:** API Client 100%, OAuth 100%, Analytics 10%
+**Status:** API Client 100%, OAuth 100%, Analytics 80%
 
 ---
 
@@ -388,15 +390,15 @@ All P0 items are now functional:
 
 ### P1 (Enhancement)
 4. Additional commands (focus on quality over quantity)
-5. ✅ Complete remaining tools (all 55 implemented)
+5. ✅ Complete remaining tools (all 56 implemented)
 6. ✅ OAuth callback server
 
 ### P2 (Nice to Have)
 7. UI system enhancements
-8. Hooks system
-9. Analytics/telemetry
+8. ✅ Hooks system
+9. ✅ Analytics/telemetry
 10. Comprehensive test suite
-11. CI/CD configuration
+11. ✅ CI/CD configuration
 
 ---
 
@@ -433,6 +435,9 @@ All P0 items are now functional:
 16. ✅ Added utility tools: `sed_replace`, `json_query`, `env_get`, `env_set`, `file_info`
 17. ✅ Implemented LSP client, manager, and `LSPTool`
 18. ✅ All 56 target tools implemented and registered
+19. ✅ Implemented Hooks system with sync/async execution and REPL/TUI integration
+20. ✅ Added GitHub Actions CI/CD workflow
+21. ✅ Implemented analytics/telemetry with FileSink and ConsoleSink
 
 ### Build Status
 - ✅ `go build ./...` - Success

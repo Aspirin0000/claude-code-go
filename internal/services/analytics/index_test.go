@@ -2,6 +2,8 @@ package analytics
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -106,6 +108,39 @@ func TestFormatValue(t *testing.T) {
 		if got != c.expected {
 			t.Errorf("formatValue(%v) = %q, want %q", c.input, got, c.expected)
 		}
+	}
+}
+
+func TestFileSink(t *testing.T) {
+	os.Setenv("GO_ENV", "test")
+	ResetForTesting()
+
+	tmpFile := filepath.Join(t.TempDir(), "events.jsonl")
+	sink, err := NewFileSink(tmpFile)
+	if err != nil {
+		t.Fatalf("failed to create file sink: %v", err)
+	}
+	defer sink.Close()
+
+	sink.LogEvent("test_event", LogEventMetadata{"key": 42})
+	sink.LogEvent("second_event", LogEventMetadata{"flag": true})
+
+	data, err := os.ReadFile(tmpFile)
+	if err != nil {
+		t.Fatalf("failed to read sink file: %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines, got %d", len(lines))
+	}
+}
+
+func TestInitDefaultSink(t *testing.T) {
+	os.Setenv("GO_ENV", "test")
+	ResetForTesting()
+	InitDefaultSink()
+	if !IsSinkAttached() {
+		t.Error("expected sink to be attached after InitDefaultSink")
 	}
 }
 
