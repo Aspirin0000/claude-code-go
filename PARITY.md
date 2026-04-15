@@ -491,8 +491,11 @@ All P0 items are now functional:
 67. ✅ Refactored `runJSONMode` into `runJSONModeWithApp` for testability
 68. ✅ Added JSON mode integration tests (simple response, tool use, invalid JSON, missing prompt)
 69. ✅ Added App/TUI unit tests (`handleAPIResponse`, `processStreamEvent`, `finishStream`)
-70. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-71. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+70. ✅ Added claudeinchrome utility tests
+71. ✅ Implemented `/context` command to show AI conversation context
+72. ✅ Added context command tests (execution, git context, CLAUDE.md discovery)
+73. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+74. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
