@@ -14,6 +14,7 @@ import (
 // TasksCommand manages tasks
 type TasksCommand struct {
 	*BaseCommand
+	getTasksFilePath func() string
 }
 
 // Task represents a single task
@@ -41,6 +42,10 @@ func NewTasksCommand() *TasksCommand {
 			"List and manage tasks",
 			CategoryAdvanced,
 		),
+		getTasksFilePath: func() string {
+			homeDir, _ := os.UserHomeDir()
+			return filepath.Join(homeDir, ".claude-code", "tasks.json")
+		},
 	}
 	cmd.WithAliases("task", "todos", "todo")
 	cmd.WithHelp(`Usage: /tasks [add|done|list|remove] [task]
@@ -118,12 +123,6 @@ func (t *TasksCommand) Execute(ctx context.Context, args []string) error {
 		// Treat as adding a task with the whole args as description
 		return t.addTask(args)
 	}
-}
-
-// getTasksFilePath returns the path to the tasks file
-func (t *TasksCommand) getTasksFilePath() string {
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".claude-code", "tasks.json")
 }
 
 // loadTasks loads tasks from disk

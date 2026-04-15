@@ -460,7 +460,10 @@ All P0 items are now functional:
 36. ✅ Added unit tests for permissions logic (`IsToolAllowed`, `GetAllowedTools`, `GetToolsNeedingAsk`)
 37. ✅ Added unit tests for model command (`formatNumber`, model lookup, switching)
 38. ✅ Added unit tests for cost command (`calculateCostTokens`, execution)
-39. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+39. ✅ Added unit tests for help, glob, and grep commands
+40. ✅ Added unit tests for tasks command (add, done, remove, priority, tags, clear)
+41. ✅ Refactored tasks command to support file path injection for testing
+42. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
