@@ -490,8 +490,9 @@ All P0 items are now functional:
 66. ✅ Added `api.Client.SetBaseURL()` to enable mock API server testing
 67. ✅ Refactored `runJSONMode` into `runJSONModeWithApp` for testability
 68. ✅ Added JSON mode integration tests (simple response, tool use, invalid JSON, missing prompt)
-69. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-70. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+69. ✅ Added App/TUI unit tests (`handleAPIResponse`, `processStreamEvent`, `finishStream`)
+70. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+71. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
