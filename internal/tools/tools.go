@@ -596,7 +596,7 @@ func (w *WebSearchTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
 
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("search request failed: %w", err)
@@ -1012,6 +1012,67 @@ func (g *GitLogTool) Call(ctx context.Context, input json.RawMessage) (json.RawM
 	return json.Marshal(result)
 }
 
+// GitCommitTool Git commit tool
+type GitCommitTool struct{}
+
+func (g *GitCommitTool) Name() string        { return "git_commit" }
+func (g *GitCommitTool) Description() string { return "Create a git commit with a message" }
+func (g *GitCommitTool) IsReadOnly() bool    { return false }
+func (g *GitCommitTool) IsDestructive() bool { return false }
+
+func (g *GitCommitTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"message": {"type": "string", "description": "Commit message"},
+			"all": {"type": "boolean", "description": "Stage all modified/deleted files before commit"}
+		},
+		"required": ["message"]
+	}`)
+}
+
+func (g *GitCommitTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path    string `json:"path"`
+		Message string `json:"message"`
+		All     bool   `json:"all"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	path := params.Path
+	if path == "" {
+		path = "."
+	}
+
+	args := []string{"-C", path, "commit", "-m", params.Message}
+	if params.All {
+		args = append(args, "-a")
+	}
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Path    string `json:"path"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+		Path:    path,
+	}
+
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry creates a registry with the default tools
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -1033,6 +1094,7 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&GitStatusTool{})
 	registry.Register(&GitDiffTool{})
 	registry.Register(&GitLogTool{})
+	registry.Register(&GitCommitTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})
