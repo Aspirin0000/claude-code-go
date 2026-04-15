@@ -473,7 +473,7 @@ func (a *App) View() string {
 			}
 		case "assistant":
 			content := msg.Content
-			if content == "" && len(msg.Blocks) > 0 {
+			if len(msg.Blocks) > 0 {
 				hasToolUse := false
 				for _, block := range msg.Blocks {
 					if block.Type == "tool_use" {
@@ -482,7 +482,11 @@ func (a *App) View() string {
 					}
 				}
 				if hasToolUse {
-					content = "[using tools...]"
+					if content != "" {
+						content = content + "\n[using tools...]"
+					} else {
+						content = "[using tools...]"
+					}
 				}
 			}
 			b.WriteString(assistantStyle.Render("Claude: ") + content)
