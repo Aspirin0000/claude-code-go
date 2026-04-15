@@ -136,10 +136,18 @@ func runSimpleREPL() error {
 	printWelcome()
 
 	historyFile := filepath.Join(utils.GetClaudeConfigHomeDir(), "repl_history")
+
+	// Build slash command completer
+	var completers []readline.PrefixCompleterInterface
+	for _, name := range commands.GetRegistry().ListNames() {
+		completers = append(completers, readline.PcItem("/"+name))
+	}
+	autoComplete := readline.NewPrefixCompleter(completers...)
+
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          "\n❯ ",
 		HistoryFile:     historyFile,
-		AutoComplete:    nil,
+		AutoComplete:    autoComplete,
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
 	})

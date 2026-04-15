@@ -80,6 +80,17 @@ func (r *Registry) List() []Command {
 	return result
 }
 
+func (r *Registry) ListNames() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	result := make([]string, 0, len(r.commands))
+	for name := range r.commands {
+		result = append(result, name)
+	}
+	return result
+}
+
 func (r *Registry) ListByCategory(cat CommandCategory) []Command {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
