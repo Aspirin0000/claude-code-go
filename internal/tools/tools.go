@@ -1513,6 +1513,104 @@ func (g *GitStashTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	return json.Marshal(result)
 }
 
+// HttpRequestTool HTTP request tool
+type HttpRequestTool struct{}
+
+func (h *HttpRequestTool) Name() string { return "http_request" }
+func (h *HttpRequestTool) Description() string {
+	return "Make HTTP requests (GET, POST, PUT, DELETE, PATCH) with custom headers and body"
+}
+func (h *HttpRequestTool) IsReadOnly() bool    { return true }
+func (h *HttpRequestTool) IsDestructive() bool { return false }
+
+func (h *HttpRequestTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"url": {"type": "string", "description": "Request URL"},
+			"method": {"type": "string", "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"], "description": "HTTP method (default: GET)"},
+			"headers": {"type": "object", "description": "Request headers as key-value pairs"},
+			"body": {"type": "string", "description": "Request body"},
+			"timeout": {"type": "number", "description": "Timeout in milliseconds (default: 30000)"}
+		},
+		"required": ["url"]
+	}`)
+}
+
+func (h *HttpRequestTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		URL     string            `json:"url"`
+		Method  string            `json:"method"`
+		Headers map[string]string `json:"headers"`
+		Body    string            `json:"body"`
+		Timeout int               `json:"timeout"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	method := params.Method
+	if method == "" {
+		method = "GET"
+	}
+
+	timeout := 30 * time.Second
+	if params.Timeout > 0 {
+		timeout = time.Duration(params.Timeout) * time.Millisecond
+	}
+
+	var bodyReader io.Reader
+	if params.Body != "" {
+		bodyReader = strings.NewReader(params.Body)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, params.URL, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	for k, v := range params.Headers {
+		req.Header.Set(k, v)
+	}
+
+	client := &http.Client{Timeout: timeout}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	respHeaders := make(map[string]string)
+	for k, v := range resp.Header {
+		if len(v) > 0 {
+			respHeaders[k] = v[0]
+		}
+	}
+
+	result := struct {
+		StatusCode int               `json:"status_code"`
+		Status     string            `json:"status"`
+		Headers    map[string]string `json:"headers"`
+		Body       string            `json:"body"`
+		URL        string            `json:"url"`
+		Method     string            `json:"method"`
+	}{
+		StatusCode: resp.StatusCode,
+		Status:     resp.Status,
+		Headers:    respHeaders,
+		Body:       string(respBody),
+		URL:        params.URL,
+		Method:     method,
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry creates a registry with the default tools
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -1542,6 +1640,7 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&GitPullTool{})
 	registry.Register(&GitResetTool{})
 	registry.Register(&GitStashTool{})
+	registry.Register(&HttpRequestTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})

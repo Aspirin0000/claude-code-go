@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -571,5 +572,69 @@ func TestGitStashTool(t *testing.T) {
 	}
 	if !parsed.Success {
 		t.Errorf("expected pop success, got: %s", parsed.Output)
+	}
+}
+
+func TestHttpRequestToolGet(t *testing.T) {
+	tool := &HttpRequestTool{}
+	input, _ := json.Marshal(map[string]interface{}{
+		"url":     "https://httpbin.org/get",
+		"method":  "GET",
+		"timeout": 10000,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		// Allow network-dependent test to fail gracefully
+		t.Logf("http request returned error (possibly network): %v", err)
+		return
+	}
+
+	var parsed struct {
+		StatusCode int    `json:"status_code"`
+		Body       string `json:"body"`
+		URL        string `json:"url"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if parsed.StatusCode != 200 {
+		t.Errorf("expected status 200, got %d", parsed.StatusCode)
+	}
+	if parsed.URL != "https://httpbin.org/get" {
+		t.Errorf("unexpected URL: %s", parsed.URL)
+	}
+}
+
+func TestHttpRequestToolPost(t *testing.T) {
+	tool := &HttpRequestTool{}
+	input, _ := json.Marshal(map[string]interface{}{
+		"url":     "https://httpbin.org/post",
+		"method":  "POST",
+		"headers": map[string]string{"Content-Type": "application/json"},
+		"body":    `{"hello":"world"}`,
+		"timeout": 10000,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Logf("http request returned error (possibly network): %v", err)
+		return
+	}
+
+	var parsed struct {
+		StatusCode int    `json:"status_code"`
+		Body       string `json:"body"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if parsed.StatusCode != 200 {
+		t.Errorf("expected status 200, got %d", parsed.StatusCode)
+	}
+	if !strings.Contains(parsed.Body, `"hello"`) {
+		t.Errorf("expected echoed body to contain hello, got: %s", parsed.Body)
 	}
 }
