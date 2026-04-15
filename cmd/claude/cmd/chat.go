@@ -15,10 +15,12 @@ import (
 	"github.com/Aspirin0000/claude-code-go/internal/mcp"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
 	"github.com/Aspirin0000/claude-code-go/internal/tools"
+	"github.com/Aspirin0000/claude-code-go/pkg/utils"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/chzyer/readline"
 	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
 var (
@@ -133,9 +135,10 @@ func runSimpleREPL() error {
 
 	printWelcome()
 
+	historyFile := filepath.Join(utils.GetClaudeConfigHomeDir(), "repl_history")
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          "\n❯ ",
-		HistoryFile:     "/tmp/claude_code_go_history.tmp",
+		HistoryFile:     historyFile,
 		AutoComplete:    nil,
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
