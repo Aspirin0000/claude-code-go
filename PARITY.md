@@ -494,8 +494,10 @@ All P0 items are now functional:
 70. ✅ Added claudeinchrome utility tests
 71. ✅ Implemented `/context` command to show AI conversation context
 72. ✅ Added context command tests (execution, git context, CLAUDE.md discovery)
-73. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-74. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+73. ✅ Implemented `/copy` command to copy last assistant message to clipboard
+74. ✅ Added copy command tests (with/without assistant message, empty messages)
+75. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+76. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
