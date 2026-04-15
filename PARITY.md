@@ -371,15 +371,15 @@ Evidence: `internal/types/`
 ## Testing
 
 ### Current Coverage
-- ✅ Unit tests for command system (registry, base command)
+- ✅ Unit tests for command system (registry, base command, save, resume, memory, reload, history, version, clear)
 - ✅ Build verification (go build ./...)
 - ✅ Format string validation (go vet)
+- ✅ API client tests (mock server, retry logic, streaming assembly)
+- ✅ Tool execution tests (all 56 tools)
+- ✅ Analytics, hooks, bootstrap, state, settings tests
 
 ### Missing
-- ❌ Integration tests
-- ✅ API client tests
-- ✅ Tool execution tests
-- ❌ End-to-end tests
+- ❌ End-to-end integration tests
 
 ---
 
@@ -411,7 +411,7 @@ All P0 items are now functional:
 - **Go Files Implemented:** ~70
 - **Lines of Go Code:** ~20,000
 - **Core Functionality:** ✅ Working
-- **Test Coverage:** ~8%
+- **Test Coverage:** ~12%
 
 **Overall Completion:** ~50% (core features fully functional, all 56 tools complete, CI/CD and hooks added)
 
@@ -448,6 +448,8 @@ All P0 items are now functional:
 26. ✅ Implemented streaming text output in REPL via `CLAUDE_STREAM=1`
 27. ✅ Extended StreamEvent to support full Anthropic SSE event assembly
 28. ✅ Implemented streaming text output in TUI with event-driven updates
+29. ✅ Added unit tests for save, resume, and session store commands
+30. ✅ Fixed analytics sink race condition panic
 
 ### Build Status
 - ✅ `go build ./...` - Success
