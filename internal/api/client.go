@@ -430,6 +430,11 @@ func (c *Client) SetProvider(provider string) {
 	}
 }
 
+// SetBaseURL sets a custom base URL for testing.
+func (c *Client) SetBaseURL(url string) {
+	c.baseURL = url
+}
+
 // GetModel returns the client's model.
 func (c *Client) GetModel() string {
 	return c.model
