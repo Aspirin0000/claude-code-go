@@ -797,6 +797,108 @@ func (d *DirWriteTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	})
 }
 
+// FileMoveTool File move/rename tool
+type FileMoveTool struct{}
+
+func (f *FileMoveTool) Name() string        { return "file_move" }
+func (f *FileMoveTool) Description() string { return "Move or rename a file or directory" }
+func (f *FileMoveTool) IsReadOnly() bool    { return false }
+func (f *FileMoveTool) IsDestructive() bool { return false }
+
+func (f *FileMoveTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"source": {"type": "string", "description": "Source path"},
+			"destination": {"type": "string", "description": "Destination path"}
+		},
+		"required": ["source", "destination"]
+	}`)
+}
+
+func (f *FileMoveTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Source      string `json:"source"`
+		Destination string `json:"destination"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	if err := os.Rename(params.Source, params.Destination); err != nil {
+		return nil, fmt.Errorf("failed to move: %w", err)
+	}
+
+	return json.Marshal(struct {
+		Success     bool   `json:"success"`
+		Source      string `json:"source"`
+		Destination string `json:"destination"`
+	}{
+		Success:     true,
+		Source:      params.Source,
+		Destination: params.Destination,
+	})
+}
+
+// GitStatusTool Git status tool
+type GitStatusTool struct{}
+
+func (g *GitStatusTool) Name() string        { return "git_status" }
+func (g *GitStatusTool) Description() string { return "Check git repository status" }
+func (g *GitStatusTool) IsReadOnly() bool    { return true }
+func (g *GitStatusTool) IsDestructive() bool { return false }
+
+func (g *GitStatusTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"}
+		}
+	}`)
+}
+
+func (g *GitStatusTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	path := params.Path
+	if path == "" {
+		path = "."
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "status", "--porcelain", "-b")
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Status string `json:"status"`
+		Branch string `json:"branch"`
+		Path   string `json:"path"`
+		Error  string `json:"error,omitempty"`
+	}{
+		Status: string(output),
+		Path:   path,
+	}
+
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	// Parse branch from first line
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "## ") {
+			result.Branch = strings.TrimPrefix(line, "## ")
+			break
+		}
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry creates a registry with the default tools
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -814,6 +916,8 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&ThinkTool{})
 	registry.Register(&FileDeleteTool{})
 	registry.Register(&DirWriteTool{})
+	registry.Register(&FileMoveTool{})
+	registry.Register(&GitStatusTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})

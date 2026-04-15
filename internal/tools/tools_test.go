@@ -232,3 +232,69 @@ func TestDirWriteTool(t *testing.T) {
 		t.Errorf("expected directory to be created")
 	}
 }
+
+func TestFileMoveTool(t *testing.T) {
+	tool := &FileMoveTool{}
+	tmpDir := t.TempDir()
+	src := filepath.Join(tmpDir, "source.txt")
+	dst := filepath.Join(tmpDir, "dest.txt")
+	os.WriteFile(src, []byte("content"), 0644)
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"source":      src,
+		"destination": dst,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Success     bool   `json:"success"`
+		Source      string `json:"source"`
+		Destination string `json:"destination"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if !parsed.Success {
+		t.Errorf("expected success")
+	}
+	if _, statErr := os.Stat(src); !os.IsNotExist(statErr) {
+		t.Errorf("expected source file to be moved")
+	}
+	if _, statErr := os.Stat(dst); os.IsNotExist(statErr) {
+		t.Errorf("expected destination file to exist")
+	}
+}
+
+func TestGitStatusTool(t *testing.T) {
+	tool := &GitStatusTool{}
+	input, _ := json.Marshal(map[string]interface{}{
+		"path": ".",
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Status string `json:"status"`
+		Branch string `json:"branch"`
+		Path   string `json:"path"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if parsed.Path != "." {
+		t.Errorf("expected path '.', got %s", parsed.Path)
+	}
+	// This test runs inside a git repo, so branch should be present
+	if parsed.Branch == "" {
+		t.Log("warning: branch not detected (may not be a git repo in test environment)")
+	}
+}
