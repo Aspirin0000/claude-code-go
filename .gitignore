@@ -5,6 +5,8 @@
 *.so
 *.dylib
 claude
+!cmd/claude/
+!cmd/claude/**
 claude-code-go
 
 # Test binary

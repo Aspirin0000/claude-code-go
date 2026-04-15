@@ -25,19 +25,19 @@ func NewStatusCommand() *StatusCommand {
 	cmd := &StatusCommand{
 		BaseCommand: NewBaseCommand(
 			"status",
-			"显示当前会话状态",
+			"Show current session status",
 			CategoryGeneral,
 		),
 	}
 	cmd.WithAliases("st")
-	cmd.WithHelp(`显示当前会话状态信息，包括:
-  - 当前使用的模型
-  - 会话持续时间
-  - 消息数量
-  - 当前目录
-  - Git 状态
-  - MCP 服务器连接状态
-  - Token 使用情况`)
+	cmd.WithHelp(`Show the current session status, including:
+  - Current model
+  - Session duration
+  - Message count
+  - Current directory
+  - Git status
+  - MCP server connection status
+  - Token usage`)
 	return cmd
 }
 
@@ -64,53 +64,53 @@ func (c *StatusCommand) Execute(ctx context.Context, args []string) error {
 	// Print status header
 	fmt.Println()
 	fmt.Println("╔════════════════════════════════════════╗")
-	fmt.Println("║           会话状态 (Session Status)      ║")
+	fmt.Println("║             Session Status             ║")
 	fmt.Println("╚════════════════════════════════════════╝")
 	fmt.Println()
 
 	// Session info
-	fmt.Printf("📊 会话信息\n")
-	fmt.Printf("   会话 ID:       %s\n", sessionID)
-	fmt.Printf("   会话时长:      %s\n", formatDuration(sessionDuration))
-	fmt.Printf("   消息数量:      %d\n", messageCount)
+	fmt.Printf("📊 Session info\n")
+	fmt.Printf("   Session ID:    %s\n", sessionID)
+	fmt.Printf("   Duration:      %s\n", formatDuration(sessionDuration))
+	fmt.Printf("   Messages:      %d\n", messageCount)
 	fmt.Println()
 
 	// Model info with config source
-	fmt.Printf("🤖 模型信息\n")
-	fmt.Printf("   当前模型:      %s\n", modelInfo.Name)
+	fmt.Printf("🤖 Model info\n")
+	fmt.Printf("   Current model: %s\n", modelInfo.Name)
 	if modelInfo.Source != "" {
-		fmt.Printf("   配置来源:      %s\n", modelInfo.Source)
+		fmt.Printf("   Source:        %s\n", modelInfo.Source)
 	}
 	fmt.Println()
 
 	// Directory info
-	fmt.Printf("📁 目录信息\n")
-	fmt.Printf("   当前目录:      %s\n", cwd)
+	fmt.Printf("📁 Directory info\n")
+	fmt.Printf("   Current dir:   %s\n", cwd)
 	if cwd != originalCwd {
-		fmt.Printf("   启动目录:      %s\n", originalCwd)
+		fmt.Printf("   Start dir:     %s\n", originalCwd)
 	}
 	fmt.Println()
 
 	// Git status
 	gitInfo := getGitStatus(cwd)
 	if gitInfo != "" {
-		fmt.Printf("🔀 Git 状态\n%s", gitInfo)
+		fmt.Printf("🔀 Git status\n%s", gitInfo)
 		fmt.Println()
 	}
 
 	// MCP servers status
 	mcpInfo := getMCPStatus()
-	fmt.Printf("🔌 MCP 服务器\n%s", mcpInfo)
+	fmt.Printf("🔌 MCP servers\n%s", mcpInfo)
 	fmt.Println()
 
 	// Token usage with actual calculations
-	fmt.Printf("📝 Token 使用\n")
-	fmt.Printf("   输入 Token:    %d\n", inputTokens)
-	fmt.Printf("   输出 Token:    %d\n", outputTokens)
-	fmt.Printf("   总计:          %d\n", totalTokens)
+	fmt.Printf("📝 Token usage\n")
+	fmt.Printf("   Input tokens:  %d\n", inputTokens)
+	fmt.Printf("   Output tokens: %d\n", outputTokens)
+	fmt.Printf("   Total:         %d\n", totalTokens)
 	if messageCount > 0 {
 		avgPerMessage := totalTokens / messageCount
-		fmt.Printf("   平均每消息:    %d tokens\n", avgPerMessage)
+		fmt.Printf("   Avg/message:   %d tokens\n", avgPerMessage)
 	}
 	fmt.Println()
 
@@ -124,11 +124,11 @@ func formatDuration(d time.Duration) string {
 	seconds := int(d.Seconds()) % 60
 
 	if hours > 0 {
-		return fmt.Sprintf("%d小时 %d分钟 %d秒", hours, minutes, seconds)
+		return fmt.Sprintf("%dh %dm %ds", hours, minutes, seconds)
 	} else if minutes > 0 {
-		return fmt.Sprintf("%d分钟 %d秒", minutes, seconds)
+		return fmt.Sprintf("%dm %ds", minutes, seconds)
 	}
-	return fmt.Sprintf("%d秒", seconds)
+	return fmt.Sprintf("%ds", seconds)
 }
 
 // ModelInfo contains model name and configuration source
@@ -143,7 +143,7 @@ func getCurrentModelInfo() ModelInfo {
 	if envModel := os.Getenv("CLAUDE_CODE_MODEL"); envModel != "" {
 		return ModelInfo{
 			Name:   envModel,
-			Source: "环境变量 (CLAUDE_CODE_MODEL)",
+			Source: "Environment variable (CLAUDE_CODE_MODEL)",
 		}
 	}
 
@@ -152,7 +152,7 @@ func getCurrentModelInfo() ModelInfo {
 	if cfg, err := config.Load(configPath); err == nil && cfg.Model != "" {
 		return ModelInfo{
 			Name:   cfg.Model,
-			Source: fmt.Sprintf("配置文件 (%s)", configPath),
+			Source: fmt.Sprintf("Config file (%s)", configPath),
 		}
 	}
 
@@ -160,7 +160,7 @@ func getCurrentModelInfo() ModelInfo {
 	defaultCfg := config.DefaultConfig()
 	return ModelInfo{
 		Name:   defaultCfg.Model,
-		Source: "默认配置",
+		Source: "Default configuration",
 	}
 }
 
@@ -244,7 +244,7 @@ func getGitStatus(cwd string) string {
 	branchCmd.Dir = cwd
 	branch, err := branchCmd.Output()
 	if err == nil {
-		result.WriteString(fmt.Sprintf("   分支:          %s", strings.TrimSpace(string(branch))))
+		result.WriteString(fmt.Sprintf("   Branch:        %s", strings.TrimSpace(string(branch))))
 	}
 
 	// Get status
@@ -278,9 +278,9 @@ func getGitStatus(cwd string) string {
 		}
 
 		if modified > 0 || staged > 0 || untracked > 0 {
-			result.WriteString(fmt.Sprintf(" (%d修改, %d暂存, %d未跟踪)", modified, staged, untracked))
+			result.WriteString(fmt.Sprintf(" (%d modified, %d staged, %d untracked)", modified, staged, untracked))
 		} else {
-			result.WriteString(" (工作区干净)")
+			result.WriteString(" (working tree clean)")
 		}
 		result.WriteString("\n")
 	}
@@ -294,7 +294,7 @@ func getMCPStatus() string {
 	statuses := manager.GetStatus()
 
 	if len(statuses) == 0 {
-		return "   无配置的服务器\n"
+		return "   No configured servers\n"
 	}
 
 	var result strings.Builder
@@ -308,7 +308,7 @@ func getMCPStatus() string {
 		result.WriteString(fmt.Sprintf("   %s %s (%s)\n", icon, status.Name, status.Type))
 	}
 
-	result.WriteString(fmt.Sprintf("   总计: %d/%d 已连接\n", connected, len(statuses)))
+	result.WriteString(fmt.Sprintf("   Total: %d/%d connected\n", connected, len(statuses)))
 
 	return result.String()
 }

@@ -25,43 +25,43 @@ var AvailableModels = map[string]AIModelInfo{
 	"claude-3-opus-20240229": {
 		ID:          "claude-3-opus-20240229",
 		Name:        "Claude 3 Opus",
-		Description: "最强大的Claude模型，适合复杂任务",
+		Description: "Most capable Claude model for complex tasks",
 		ContextWin:  200000,
 		InputPrice:  15.0,
 		OutputPrice: 75.0,
 		Strengths: []string{
-			"复杂的推理和分析",
-			"创意写作",
-			"代码生成",
-			"详细的技术文档",
+			"Complex reasoning and analysis",
+			"Creative writing",
+			"Code generation",
+			"Detailed technical documentation",
 		},
 	},
 	"claude-3-sonnet-20240229": {
 		ID:          "claude-3-sonnet-20240229",
 		Name:        "Claude 3 Sonnet",
-		Description: "平衡性能和速度，适合大多数任务",
+		Description: "Balanced performance and speed for most tasks",
 		ContextWin:  200000,
 		InputPrice:  3.0,
 		OutputPrice: 15.0,
 		Strengths: []string{
-			"日常对话",
-			"代码辅助",
-			"内容摘要",
-			"多语言支持",
+			"Everyday conversations",
+			"Code assistance",
+			"Content summarization",
+			"Multilingual support",
 		},
 	},
 	"claude-3-haiku-20240307": {
 		ID:          "claude-3-haiku-20240307",
 		Name:        "Claude 3 Haiku",
-		Description: "最快最经济的模型，适合简单任务",
+		Description: "Fastest and most cost-effective model for simple tasks",
 		ContextWin:  200000,
 		InputPrice:  0.25,
 		OutputPrice: 1.25,
 		Strengths: []string{
-			"快速响应",
-			"简单问答",
-			"分类任务",
-			"轻量级任务",
+			"Fast responses",
+			"Simple Q&A",
+			"Classification tasks",
+			"Lightweight tasks",
 		},
 	},
 }
@@ -76,24 +76,24 @@ func NewModelCommand() *ModelCommand {
 	return &ModelCommand{
 		BaseCommand: NewBaseCommand(
 			"model",
-			"切换或查看AI模型",
+			"Switch or view AI models",
 			CategoryConfig,
 		).WithAliases("m", "switch-model").
-			WithHelp(`使用: /model [模型名|list]
+			WithHelp(`Usage: /model [model-name|list]
 
-切换使用的AI模型或查看当前模型信息。
+Switch the active AI model or view current model information.
 
-可用模型:
-  • claude-3-opus-20240229   - 最强大的模型，适合复杂任务
-  • claude-3-sonnet-20240229 - 平衡性能和速度，适合大多数任务
-  • claude-3-haiku-20240307  - 最快最经济，适合简单任务
+Available models:
+  • claude-3-opus-20240229   - Most capable model for complex tasks
+  • claude-3-sonnet-20240229 - Balanced performance and speed for most tasks
+  • claude-3-haiku-20240307  - Fastest and most economical for simple tasks
 
-用法:
-  /model                    - 显示当前模型和可用模型列表
-  /model <模型名>           - 切换到指定模型
-  /model list               - 列出所有可用模型及详细信息
+Usage:
+  /model                    - Show the current model and available model list
+  /model <model-name>       - Switch to the specified model
+  /model list               - List all available models with details
 
-别名: /m, /switch-model`),
+Aliases: /m, /switch-model`),
 	}
 }
 
@@ -120,30 +120,30 @@ func (c *ModelCommand) showCurrentModel() error {
 
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║                   当前模型 (Current Model)                ║")
+	fmt.Println("║                      Current Model                       ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
 	if exists {
 		fmt.Printf("🤖 %s\n", modelInfo.Name)
 		fmt.Printf("   ID:          %s\n", modelInfo.ID)
-		fmt.Printf("   描述:        %s\n", modelInfo.Description)
-		fmt.Printf("   上下文窗口:  %s tokens\n", formatNumber(modelInfo.ContextWin))
-		fmt.Printf("\n   💰 定价 (每1M tokens):\n")
-		fmt.Printf("      输入:  $%.2f\n", modelInfo.InputPrice)
-		fmt.Printf("      输出:  $%.2f\n", modelInfo.OutputPrice)
-		fmt.Printf("\n   ✨ 擅长:\n")
+		fmt.Printf("   Description: %s\n", modelInfo.Description)
+		fmt.Printf("   Context:     %s tokens\n", formatNumber(modelInfo.ContextWin))
+		fmt.Printf("\n   💰 Pricing (per 1M tokens):\n")
+		fmt.Printf("      Input:  $%.2f\n", modelInfo.InputPrice)
+		fmt.Printf("      Output: $%.2f\n", modelInfo.OutputPrice)
+		fmt.Printf("\n   ✨ Strengths:\n")
 		for _, strength := range modelInfo.Strengths {
 			fmt.Printf("      • %s\n", strength)
 		}
 	} else {
 		fmt.Printf("🤖 %s\n", currentModel)
-		fmt.Println("   (此模型不在内置列表中)")
+		fmt.Println("   (this model is not in the built-in list)")
 	}
 
 	fmt.Println()
-	fmt.Println("💡 提示: 使用 /model list 查看所有可用模型")
-	fmt.Println("        使用 /model <模型名> 切换模型")
+	fmt.Println("💡 Tip: use /model list to see all available models")
+	fmt.Println("      use /model <model-name> to switch models")
 	fmt.Println()
 
 	return nil
@@ -155,26 +155,26 @@ func (c *ModelCommand) listAllModels() error {
 
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║              可用模型列表 (Available Models)              ║")
+	fmt.Println("║                    Available Models                     ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
 	for _, model := range AvailableModels {
 		if model.ID == currentModel {
-			fmt.Printf("▶ %s (当前使用中)\n", model.Name)
+			fmt.Printf("▶ %s (currently active)\n", model.Name)
 		} else {
 			fmt.Printf("  %s\n", model.Name)
 		}
 		fmt.Printf("   ID:          %s\n", model.ID)
-		fmt.Printf("   描述:        %s\n", model.Description)
-		fmt.Printf("   上下文窗口:  %s tokens\n", formatNumber(model.ContextWin))
-		fmt.Printf("   输入价格:    $%.2f/1M tokens\n", model.InputPrice)
-		fmt.Printf("   输出价格:    $%.2f/1M tokens\n", model.OutputPrice)
-		fmt.Printf("   擅长:        %s\n", strings.Join(model.Strengths, ", "))
+		fmt.Printf("   Description: %s\n", model.Description)
+		fmt.Printf("   Context:     %s tokens\n", formatNumber(model.ContextWin))
+		fmt.Printf("   Input price: $%.2f/1M tokens\n", model.InputPrice)
+		fmt.Printf("   Output price:$%.2f/1M tokens\n", model.OutputPrice)
+		fmt.Printf("   Strengths:   %s\n", strings.Join(model.Strengths, ", "))
 		fmt.Println()
 	}
 
-	fmt.Println("💡 使用 /model <模型ID> 切换模型")
+	fmt.Println("💡 Use /model <model-id> to switch models")
 	fmt.Println()
 
 	return nil
@@ -200,16 +200,16 @@ func (c *ModelCommand) switchModel(modelName string) error {
 	}
 
 	if targetModel == nil {
-		fmt.Printf("\n❌ 错误: 未知的模型 '%s'\n\n", modelName)
-		fmt.Println("可用模型:")
+		fmt.Printf("\n❌ Error: unknown model '%s'\n\n", modelName)
+		fmt.Println("Available models:")
 		for _, model := range AvailableModels {
 			fmt.Printf("  • %s (%s)\n", model.ID, model.Name)
 		}
 		fmt.Println()
-		fmt.Println("提示: 可以使用部分名称匹配，例如:")
-		fmt.Println("  /model opus  → 切换到 claude-3-opus-20240229")
-		fmt.Println("  /model sonnet → 切换到 claude-3-sonnet-20240229")
-		fmt.Println("  /model haiku → 切换到 claude-3-haiku-20240307")
+		fmt.Println("Tip: partial matches are supported, for example:")
+		fmt.Println("  /model opus   → switches to claude-3-opus-20240229")
+		fmt.Println("  /model sonnet → switches to claude-3-sonnet-20240229")
+		fmt.Println("  /model haiku  → switches to claude-3-haiku-20240307")
 		fmt.Println()
 		return fmt.Errorf("unknown model: %s", modelName)
 	}
@@ -217,7 +217,7 @@ func (c *ModelCommand) switchModel(modelName string) error {
 	// Get current model for comparison
 	currentModel := c.getCurrentModel()
 	if currentModel == targetModel.ID {
-		fmt.Printf("\n✅ 已经在使用 %s\n\n", targetModel.Name)
+		fmt.Printf("\n✅ Already using %s\n\n", targetModel.Name)
 		return nil
 	}
 
@@ -225,7 +225,7 @@ func (c *ModelCommand) switchModel(modelName string) error {
 	configPath := config.GetConfigPath()
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		return fmt.Errorf("加载配置失败: %w", err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	// Update model
@@ -233,27 +233,27 @@ func (c *ModelCommand) switchModel(modelName string) error {
 
 	// Save config
 	if err := cfg.Save(configPath); err != nil {
-		return fmt.Errorf("保存配置失败: %w", err)
+		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
 	// Print success message with model details
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║                  模型切换成功 (Model Switched)             ║")
+	fmt.Println("║                     Model Switched                      ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
-	fmt.Printf("✅ 已切换到: %s\n", targetModel.Name)
-	fmt.Printf("   模型 ID:  %s\n", targetModel.ID)
-	fmt.Printf("\n   能力概览:\n")
+	fmt.Printf("✅ Switched to: %s\n", targetModel.Name)
+	fmt.Printf("   Model ID: %s\n", targetModel.ID)
+	fmt.Printf("\n   Capability overview:\n")
 	for _, strength := range targetModel.Strengths {
 		fmt.Printf("   • %s\n", strength)
 	}
-	fmt.Printf("\n   💰 使用成本:\n")
-	fmt.Printf("   输入: $%.2f / 1M tokens\n", targetModel.InputPrice)
-	fmt.Printf("   输出: $%.2f / 1M tokens\n", targetModel.OutputPrice)
-	fmt.Printf("\n   📊 上下文窗口: %s tokens\n", formatNumber(targetModel.ContextWin))
+	fmt.Printf("\n   💰 Pricing:\n")
+	fmt.Printf("   Input:  $%.2f / 1M tokens\n", targetModel.InputPrice)
+	fmt.Printf("   Output: $%.2f / 1M tokens\n", targetModel.OutputPrice)
+	fmt.Printf("\n   📊 Context window: %s tokens\n", formatNumber(targetModel.ContextWin))
 	fmt.Println()
-	fmt.Println("📝 配置已保存，将在下次对话生效")
+	fmt.Println("📝 Configuration saved; it will take effect for new conversations")
 	fmt.Println()
 
 	return nil

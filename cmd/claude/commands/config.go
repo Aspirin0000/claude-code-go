@@ -42,33 +42,33 @@ func NewConfigCommand() *ConfigCommand {
 	return &ConfigCommand{
 		BaseCommand: NewBaseCommand(
 			"config",
-			"管理配置设置",
+			"Manage configuration settings",
 			CategoryConfig,
 		).WithAliases("settings", "cfg").
-			WithHelp(`使用: /config [subcommand] [args...]
+			WithHelp(`Usage: /config [subcommand] [args...]
 
-管理Claude Code的配置设置。
+Manage Claude Code configuration settings.
 
-子命令:
-  get <key>       - 获取指定配置项的值
-  set <key> <val> - 设置配置项的值
-  list            - 列出所有可用的配置键
-  (无参数)        - 显示所有当前配置
+Subcommands:
+  get <key>       - Get the value of a configuration key
+  set <key> <val> - Set the value of a configuration key
+  list            - List all available configuration keys
+  (no args)       - Show all current configuration values
 
-支持的配置键:
-  api_key         - API密钥
-  model           - 默认AI模型
-  theme           - 界面主题 (dark/light)
-  verbose         - 启用详细日志输出 (true/false)
-  provider        - API提供商
-  auto_save       - 启用自动保存 (true/false)
-  auto_save_dir   - 自动保存目录路径
+Supported keys:
+  api_key         - API key
+  model           - Default AI model
+  theme           - UI theme (dark/light)
+  verbose         - Enable verbose logging (true/false)
+  provider        - API provider
+  auto_save       - Enable auto-save (true/false)
+  auto_save_dir   - Auto-save directory path
 
-使用点符号访问嵌套配置:
+Use dot notation for nested configuration:
   /config get mcp.timeout
   /config set mcp.timeout 30
 
-别名: /settings, /cfg`),
+Aliases: /settings, /cfg`),
 	}
 }
 
@@ -83,26 +83,26 @@ func (c *ConfigCommand) Execute(ctx context.Context, args []string) error {
 	switch subcommand {
 	case "get":
 		if len(args) < 2 {
-			fmt.Println("❌ 错误: 请提供配置键名")
-			fmt.Println("用法: /config get <key>")
+			fmt.Println("❌ Error: please provide a configuration key")
+			fmt.Println("Usage: /config get <key>")
 			return nil
 		}
 		return c.getConfig(args[1])
 	case "set":
 		if len(args) < 3 {
-			fmt.Println("❌ 错误: 请提供配置键名和值")
-			fmt.Println("用法: /config set <key> <value>")
+			fmt.Println("❌ Error: please provide a configuration key and value")
+			fmt.Println("Usage: /config set <key> <value>")
 			return nil
 		}
 		return c.setConfig(args[1], strings.Join(args[2:], " "))
 	case "list":
 		return c.listConfigKeys()
 	default:
-		fmt.Printf("❌ 错误: 未知子命令 '%s'\n", subcommand)
-		fmt.Println("\n可用子命令:")
-		fmt.Println("  get <key>       - 获取配置值")
-		fmt.Println("  set <key> <val> - 设置配置值")
-		fmt.Println("  list            - 列出所有配置键")
+		fmt.Printf("❌ Error: unknown subcommand '%s'\n", subcommand)
+		fmt.Println("\nAvailable subcommands:")
+		fmt.Println("  get <key>       - Get a configuration value")
+		fmt.Println("  set <key> <val> - Set a configuration value")
+		fmt.Println("  list            - List all configuration keys")
 		return nil
 	}
 }
@@ -112,21 +112,21 @@ func (c *ConfigCommand) showAllConfig() error {
 	configPath := config.GetConfigPath()
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		return fmt.Errorf("加载配置失败: %w", err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	defaultCfg := config.DefaultConfig()
 
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║              当前配置 (Current Configuration)             ║")
+	fmt.Println("║                  Current Configuration                   ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
-	fmt.Printf("📁 配置文件: %s\n", configPath)
+	fmt.Printf("📁 Config file: %s\n", configPath)
 	fmt.Println()
 
 	// Basic settings
-	fmt.Println("🔧 基本设置:")
+	fmt.Println("🔧 Basic settings:")
 	fmt.Println("  " + strings.Repeat("─", 50))
 	c.printConfigLine("api_key", c.maskAPIKey(cfg.APIKey), c.maskAPIKey(defaultCfg.APIKey), cfg.APIKey != defaultCfg.APIKey)
 	c.printConfigLine("model", cfg.Model, defaultCfg.Model, cfg.Model != defaultCfg.Model)
@@ -136,14 +136,14 @@ func (c *ConfigCommand) showAllConfig() error {
 	c.printConfigLine("auto_save", fmt.Sprintf("%v", cfg.AutoSave), fmt.Sprintf("%v", defaultCfg.AutoSave), cfg.AutoSave != defaultCfg.AutoSave)
 	autoSaveDir := cfg.AutoSaveDir
 	if autoSaveDir == "" {
-		autoSaveDir = "(默认)"
+		autoSaveDir = "(default)"
 	}
 	c.printConfigLine("auto_save_dir", autoSaveDir, "", cfg.AutoSaveDir != "")
 
 	// Environment variables
 	if len(cfg.Env) > 0 {
 		fmt.Println()
-		fmt.Println("🌍 环境变量:")
+		fmt.Println("🌍 Environment variables:")
 		fmt.Println("  " + strings.Repeat("─", 50))
 		for key, value := range cfg.Env {
 			fmt.Printf("  %-20s = %s\n", key, value)
@@ -153,16 +153,16 @@ func (c *ConfigCommand) showAllConfig() error {
 	// Projects
 	if len(cfg.Projects) > 0 {
 		fmt.Println()
-		fmt.Printf("📂 项目配置 (%d个项目):\n", len(cfg.Projects))
+		fmt.Printf("📂 Project configuration (%d projects):\n", len(cfg.Projects))
 		for projectPath := range cfg.Projects {
 			fmt.Printf("  • %s\n", projectPath)
 		}
 	}
 
 	fmt.Println()
-	fmt.Println("💡 提示: 使用 /config get <key> 查看特定配置")
-	fmt.Println("        使用 /config set <key> <value> 修改配置")
-	fmt.Println("        使用 /config list 查看所有可用配置键")
+	fmt.Println("💡 Tip: use /config get <key> to view a specific configuration")
+	fmt.Println("      use /config set <key> <value> to update a configuration")
+	fmt.Println("      use /config list to see all available configuration keys")
 	fmt.Println()
 
 	return nil
@@ -177,10 +177,10 @@ func (c *ConfigCommand) printConfigLine(key, value, defaultVal string, modified 
 
 	displayValue := value
 	if value == "" {
-		displayValue = "(未设置)"
+		displayValue = "(not set)"
 	}
 
-	fmt.Printf("  %s %-18s %-25s (默认: %s)\n", indicator, key+":", displayValue, defaultVal)
+	fmt.Printf("  %s %-18s %-25s (default: %s)\n", indicator, key+":", displayValue, defaultVal)
 }
 
 // maskAPIKey masks the API key for display
@@ -199,7 +199,7 @@ func (c *ConfigCommand) getConfig(key string) error {
 	configPath := config.GetConfigPath()
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		return fmt.Errorf("加载配置失败: %w", err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	defaultCfg := config.DefaultConfig()
@@ -218,23 +218,23 @@ func (c *ConfigCommand) getConfig(key string) error {
 	defaultValue, _ := c.getBasicConfigValue(defaultCfg, key)
 
 	fmt.Println()
-	fmt.Printf("🔑 配置键: %s\n", key)
+	fmt.Printf("🔑 Configuration key: %s\n", key)
 	fmt.Println("  " + strings.Repeat("─", 40))
 
 	// Find config metadata
 	meta := c.findConfigMeta(key)
 	if meta != nil {
-		fmt.Printf("  描述: %s\n", meta.Description)
-		fmt.Printf("  类型: %s\n", meta.Type)
+		fmt.Printf("  Description: %s\n", meta.Description)
+		fmt.Printf("  Type: %s\n", meta.Type)
 	}
 
-	fmt.Printf("  当前值: %v\n", value)
-	fmt.Printf("  默认值: %v\n", defaultValue)
+	fmt.Printf("  Current value: %v\n", value)
+	fmt.Printf("  Default value: %v\n", defaultValue)
 
 	if fmt.Sprintf("%v", value) != fmt.Sprintf("%v", defaultValue) {
-		fmt.Println("  状态: ● 已修改")
+		fmt.Println("  Status: ● modified")
 	} else {
-		fmt.Println("  状态: 使用默认值")
+		fmt.Println("  Status: using default")
 	}
 
 	fmt.Println()
@@ -256,14 +256,14 @@ func (c *ConfigCommand) getBasicConfigValue(cfg *config.Config, key string) (int
 		}
 	}
 
-	return nil, fmt.Errorf("未知配置键: %s", key)
+	return nil, fmt.Errorf("unknown configuration key: %s", key)
 }
 
 // getNestedConfig handles nested configuration keys
 func (c *ConfigCommand) getNestedConfig(cfg *config.Config, key string) error {
 	parts := strings.Split(key, ".")
 	if len(parts) < 2 {
-		return fmt.Errorf("无效的嵌套键格式: %s", key)
+		return fmt.Errorf("invalid nested key format: %s", key)
 	}
 
 	switch parts[0] {
@@ -275,20 +275,20 @@ func (c *ConfigCommand) getNestedConfig(cfg *config.Config, key string) error {
 		if len(parts) == 2 {
 			value, exists := cfg.Env[parts[1]]
 			if !exists {
-				fmt.Printf("\n🔑 配置键: %s\n", key)
-				fmt.Println("  状态: 未设置")
+				fmt.Printf("\n🔑 Configuration key: %s\n", key)
+				fmt.Println("  Status: not set")
 				fmt.Println()
 				return nil
 			}
 			fmt.Println()
-			fmt.Printf("🔑 配置键: %s\n", key)
-			fmt.Printf("  值: %s\n", value)
+			fmt.Printf("🔑 Configuration key: %s\n", key)
+			fmt.Printf("  Value: %s\n", value)
 			fmt.Println()
 			return nil
 		}
-		return fmt.Errorf("无效的 env 键格式: %s", key)
+		return fmt.Errorf("invalid env key format: %s", key)
 	default:
-		return fmt.Errorf("不支持的配置命名空间: %s", parts[0])
+		return fmt.Errorf("unsupported configuration namespace: %s", parts[0])
 	}
 }
 
@@ -296,20 +296,20 @@ func (c *ConfigCommand) getNestedConfig(cfg *config.Config, key string) error {
 func (c *ConfigCommand) getMCPConfig(cfg *config.Config, parts []string) error {
 	if len(parts) == 0 {
 		fmt.Println()
-		fmt.Println("🔌 MCP 服务器配置:")
+		fmt.Println("🔌 MCP server configuration:")
 		fmt.Println("  " + strings.Repeat("─", 40))
 
 		currentProject := c.getCurrentProject()
 		projectCfg := cfg.GetProjectConfig(currentProject)
 
 		if len(projectCfg.MCPServers) == 0 {
-			fmt.Println("  (无配置的MCP服务器)")
+			fmt.Println("  (no configured MCP servers)")
 		} else {
 			for name, serverCfg := range projectCfg.MCPServers {
 				fmt.Printf("  • %s:\n", name)
-				fmt.Printf("    命令: %s\n", serverCfg.Command)
+				fmt.Printf("    Command: %s\n", serverCfg.Command)
 				if len(serverCfg.Args) > 0 {
-					fmt.Printf("    参数: %s\n", strings.Join(serverCfg.Args, " "))
+					fmt.Printf("    Args: %s\n", strings.Join(serverCfg.Args, " "))
 				}
 			}
 		}
@@ -324,18 +324,18 @@ func (c *ConfigCommand) getMCPConfig(cfg *config.Config, parts []string) error {
 
 	serverCfg, exists := projectCfg.MCPServers[serverName]
 	if !exists {
-		return fmt.Errorf("MCP服务器 '%s' 未找到", serverName)
+		return fmt.Errorf("MCP server '%s' not found", serverName)
 	}
 
 	fmt.Println()
-	fmt.Printf("🔌 MCP 服务器: %s\n", serverName)
+	fmt.Printf("🔌 MCP server: %s\n", serverName)
 	fmt.Println("  " + strings.Repeat("─", 40))
-	fmt.Printf("  命令: %s\n", serverCfg.Command)
+	fmt.Printf("  Command: %s\n", serverCfg.Command)
 	if len(serverCfg.Args) > 0 {
-		fmt.Printf("  参数: %v\n", serverCfg.Args)
+		fmt.Printf("  Args: %v\n", serverCfg.Args)
 	}
 	if len(serverCfg.Env) > 0 {
-		fmt.Println("  环境变量:")
+		fmt.Println("  Environment:")
 		for k, v := range serverCfg.Env {
 			fmt.Printf("    %s = %s\n", k, v)
 		}
@@ -348,24 +348,24 @@ func (c *ConfigCommand) getMCPConfig(cfg *config.Config, parts []string) error {
 // getProjectConfig retrieves project configuration
 func (c *ConfigCommand) getProjectConfig(cfg *config.Config, parts []string) error {
 	if len(parts) < 1 {
-		return fmt.Errorf("请指定项目路径")
+		return fmt.Errorf("please specify a project path")
 	}
 
 	projectPath := parts[0]
 	projectCfg := cfg.GetProjectConfig(projectPath)
 
 	fmt.Println()
-	fmt.Printf("📂 项目配置: %s\n", projectPath)
+	fmt.Printf("📂 Project configuration: %s\n", projectPath)
 	fmt.Println("  " + strings.Repeat("─", 40))
 
 	if len(projectCfg.AllowedTools) > 0 {
-		fmt.Printf("  允许的工具: %s\n", strings.Join(projectCfg.AllowedTools, ", "))
+		fmt.Printf("  Allowed tools: %s\n", strings.Join(projectCfg.AllowedTools, ", "))
 	} else {
-		fmt.Println("  允许的工具: (所有工具)")
+		fmt.Println("  Allowed tools: (all tools)")
 	}
 
 	if len(projectCfg.MCPServers) > 0 {
-		fmt.Printf("  MCP服务器: %d个\n", len(projectCfg.MCPServers))
+		fmt.Printf("  MCP servers: %d\n", len(projectCfg.MCPServers))
 		for name := range projectCfg.MCPServers {
 			fmt.Printf("    • %s\n", name)
 		}
@@ -380,8 +380,8 @@ func (c *ConfigCommand) setConfig(key, value string) error {
 	// Validate key exists in definitions
 	meta := c.findConfigMeta(key)
 	if meta == nil && !strings.Contains(key, ".") {
-		fmt.Printf("❌ 错误: 未知配置键 '%s'\n", key)
-		fmt.Println("\n可用配置键:")
+		fmt.Printf("❌ Error: unknown configuration key '%s'\n", key)
+		fmt.Println("\nAvailable configuration keys:")
 		c.listConfigKeys()
 		return fmt.Errorf("unknown config key: %s", key)
 	}
@@ -389,7 +389,7 @@ func (c *ConfigCommand) setConfig(key, value string) error {
 	// Validate value type
 	if meta != nil {
 		if err := c.validateValueType(value, meta.Type); err != nil {
-			return fmt.Errorf("值类型错误: %w", err)
+			return fmt.Errorf("invalid value type: %w", err)
 		}
 	}
 
@@ -403,7 +403,7 @@ func (c *ConfigCommand) setConfig(key, value string) error {
 	configPath := config.GetConfigPath()
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		return fmt.Errorf("加载配置失败: %w", err)
+		return fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	// Handle nested keys
@@ -418,11 +418,11 @@ func (c *ConfigCommand) setConfig(key, value string) error {
 
 	// Save config
 	if err := cfg.Save(configPath); err != nil {
-		return fmt.Errorf("保存配置失败: %w", err)
+		return fmt.Errorf("failed to save configuration: %w", err)
 	}
 
 	fmt.Println()
-	fmt.Println("✅ 配置已更新")
+	fmt.Println("✅ Configuration updated")
 	fmt.Printf("   %s = %s\n", key, value)
 	fmt.Println()
 
@@ -445,7 +445,7 @@ func (c *ConfigCommand) setBasicConfigValue(cfg *config.Config, key, value strin
 		}
 	}
 
-	return fmt.Errorf("未知配置键: %s", key)
+	return fmt.Errorf("unknown configuration key: %s", key)
 }
 
 // setFieldValue sets a field value based on its type
@@ -456,23 +456,23 @@ func (c *ConfigCommand) setFieldValue(field reflect.Value, value string) error {
 	case reflect.Bool:
 		boolValue, err := strconv.ParseBool(value)
 		if err != nil {
-			return fmt.Errorf("无效的布尔值: %s", value)
+			return fmt.Errorf("invalid boolean value: %s", value)
 		}
 		field.SetBool(boolValue)
 	case reflect.Int, reflect.Int32, reflect.Int64:
 		intValue, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
-			return fmt.Errorf("无效的整数值: %s", value)
+			return fmt.Errorf("invalid integer value: %s", value)
 		}
 		field.SetInt(intValue)
 	case reflect.Float32, reflect.Float64:
 		floatValue, err := strconv.ParseFloat(value, 64)
 		if err != nil {
-			return fmt.Errorf("无效的浮点值: %s", value)
+			return fmt.Errorf("invalid float value: %s", value)
 		}
 		field.SetFloat(floatValue)
 	default:
-		return fmt.Errorf("不支持的配置类型: %s", field.Kind())
+		return fmt.Errorf("unsupported configuration type: %s", field.Kind())
 	}
 	return nil
 }
@@ -481,13 +481,13 @@ func (c *ConfigCommand) setFieldValue(field reflect.Value, value string) error {
 func (c *ConfigCommand) setNestedConfig(cfg *config.Config, key, value string) error {
 	parts := strings.Split(key, ".")
 	if len(parts) < 2 {
-		return fmt.Errorf("无效的嵌套键格式: %s", key)
+		return fmt.Errorf("invalid nested key format: %s", key)
 	}
 
 	switch parts[0] {
 	case "env":
 		if len(parts) != 2 {
-			return fmt.Errorf("无效的 env 键格式: %s", key)
+			return fmt.Errorf("invalid env key format: %s", key)
 		}
 		if cfg.Env == nil {
 			cfg.Env = make(map[string]string)
@@ -496,17 +496,17 @@ func (c *ConfigCommand) setNestedConfig(cfg *config.Config, key, value string) e
 
 		configPath := config.GetConfigPath()
 		if err := cfg.Save(configPath); err != nil {
-			return fmt.Errorf("保存配置失败: %w", err)
+			return fmt.Errorf("failed to save configuration: %w", err)
 		}
 
 		fmt.Println()
-		fmt.Println("✅ 环境变量已设置")
+		fmt.Println("✅ Environment variable set")
 		fmt.Printf("   %s = %s\n", key, value)
 		fmt.Println()
 		return nil
 
 	default:
-		return fmt.Errorf("不支持的配置命名空间或嵌套配置 '%s' 暂不支持修改", parts[0])
+		return fmt.Errorf("unsupported configuration namespace or nested configuration '%s' cannot be modified yet", parts[0])
 	}
 }
 
@@ -518,24 +518,24 @@ func (c *ConfigCommand) validateAutoSaveDir(path string) error {
 
 	// Check if path is absolute
 	if !filepath.IsAbs(path) {
-		return fmt.Errorf("auto_save_dir 必须是绝对路径，不能是相对路径: %s", path)
+		return fmt.Errorf("auto_save_dir must be an absolute path, not a relative path: %s", path)
 	}
 
 	// Check if parent directory exists
 	parent := filepath.Dir(path)
 	info, err := os.Stat(parent)
 	if err != nil {
-		return fmt.Errorf("无法访问父目录 '%s': %w", parent, err)
+		return fmt.Errorf("unable to access parent directory '%s': %w", parent, err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("'%s' 不是目录", parent)
+		return fmt.Errorf("'%s' is not a directory", parent)
 	}
 
 	// Try to create the directory if it doesn't exist
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		// Check if we can create it
 		if err := os.MkdirAll(path, 0755); err != nil {
-			return fmt.Errorf("无法创建自动保存目录 '%s': %w", path, err)
+			return fmt.Errorf("unable to create auto-save directory '%s': %w", path, err)
 		}
 		// Clean up the test directory if it was created empty
 		if dir, _ := os.ReadDir(path); len(dir) == 0 {
@@ -549,15 +549,15 @@ func (c *ConfigCommand) validateValueType(value, expectedType string) error {
 	switch expectedType {
 	case "bool":
 		if _, err := strconv.ParseBool(value); err != nil {
-			return fmt.Errorf("'%s' 不是有效的布尔值 (请使用: true/false, yes/no, 1/0)", value)
+			return fmt.Errorf("'%s' is not a valid boolean (use: true/false, yes/no, 1/0)", value)
 		}
 	case "int":
 		if _, err := strconv.ParseInt(value, 10, 64); err != nil {
-			return fmt.Errorf("'%s' 不是有效的整数值", value)
+			return fmt.Errorf("'%s' is not a valid integer", value)
 		}
 	case "float":
 		if _, err := strconv.ParseFloat(value, 64); err != nil {
-			return fmt.Errorf("'%s' 不是有效的数值", value)
+			return fmt.Errorf("'%s' is not a valid number", value)
 		}
 	}
 	return nil
@@ -567,18 +567,18 @@ func (c *ConfigCommand) validateValueType(value, expectedType string) error {
 func (c *ConfigCommand) listConfigKeys() error {
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║           可用配置键 (Available Configuration Keys)        ║")
+	fmt.Println("║              Available Configuration Keys               ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
-	fmt.Println("🔧 基本配置:")
+	fmt.Println("🔧 Basic configuration:")
 	fmt.Println("  " + strings.Repeat("─", 50))
 	for _, meta := range ConfigDefinitions {
 		displayDefault := fmt.Sprintf("%v", meta.Default)
 		if displayDefault == "" {
-			displayDefault = "(空)"
+			displayDefault = "(empty)"
 		}
-		fmt.Printf("  %-18s %-12s 默认: %-15s %s\n",
+		fmt.Printf("  %-18s %-12s default: %-15s %s\n",
 			meta.Key,
 			"["+meta.Type+"]",
 			displayDefault,
@@ -587,18 +587,18 @@ func (c *ConfigCommand) listConfigKeys() error {
 	}
 
 	fmt.Println()
-	fmt.Println("🔌 嵌套配置 (使用点符号访问):")
+	fmt.Println("🔌 Nested configuration (use dot notation):")
 	fmt.Println("  " + strings.Repeat("─", 50))
-	fmt.Println("  env.<name>         [string]    环境变量")
-	fmt.Println("  mcp.<server>       [object]    MCP服务器配置")
-	fmt.Println("  project.<path>     [object]    项目特定配置")
+	fmt.Println("  env.<name>         [string]    Environment variable")
+	fmt.Println("  mcp.<server>       [object]    MCP server configuration")
+	fmt.Println("  project.<path>     [object]    Project-specific configuration")
 
 	fmt.Println()
-	fmt.Println("💡 用法示例:")
-	fmt.Println("  /config get model           - 查看当前模型")
-	fmt.Println("  /config set model opus      - 切换模型")
-	fmt.Println("  /config set verbose true    - 启用详细模式")
-	fmt.Println("  /config set env.API_KEY xxx - 设置环境变量")
+	fmt.Println("💡 Examples:")
+	fmt.Println("  /config get model           - View the current model")
+	fmt.Println("  /config set model opus      - Switch models")
+	fmt.Println("  /config set verbose true    - Enable verbose mode")
+	fmt.Println("  /config set env.API_KEY xxx - Set an environment variable")
 	fmt.Println()
 
 	return nil
