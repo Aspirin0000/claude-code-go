@@ -987,6 +987,7 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&EnvGetTool{})
 	registry.Register(&EnvSetTool{})
 	registry.Register(&FileInfoTool{})
+	registry.Register(&LSPTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})
