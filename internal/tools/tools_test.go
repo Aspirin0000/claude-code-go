@@ -393,3 +393,70 @@ func TestGitCommitTool(t *testing.T) {
 		t.Errorf("expected path %s, got %s", tmpDir, parsed.Path)
 	}
 }
+
+func TestGitBranchTool(t *testing.T) {
+	tool := &GitBranchTool{}
+	tmpDir := t.TempDir()
+	exec.Command("git", "init", tmpDir).Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
+	os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("x"), 0644)
+	exec.Command("git", "-C", tmpDir, "add", "file.txt").Run()
+	exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run()
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":   tmpDir,
+		"create": "feature-branch",
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if !parsed.Success {
+		t.Errorf("expected success, got: %s", parsed.Output)
+	}
+}
+
+func TestGitCheckoutTool(t *testing.T) {
+	tool := &GitCheckoutTool{}
+	tmpDir := t.TempDir()
+	exec.Command("git", "init", tmpDir).Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
+	os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("x"), 0644)
+	exec.Command("git", "-C", tmpDir, "add", "file.txt").Run()
+	exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run()
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":   tmpDir,
+		"branch": "new-branch",
+		"create": true,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if !parsed.Success {
+		t.Errorf("expected success, got: %s", parsed.Output)
+	}
+}

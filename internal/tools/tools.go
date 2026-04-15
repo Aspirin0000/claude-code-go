@@ -1073,6 +1073,137 @@ func (g *GitCommitTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	return json.Marshal(result)
 }
 
+// GitBranchTool Git branch tool
+type GitBranchTool struct{}
+
+func (g *GitBranchTool) Name() string        { return "git_branch" }
+func (g *GitBranchTool) Description() string { return "List, create, or delete git branches" }
+func (g *GitBranchTool) IsReadOnly() bool    { return true }
+func (g *GitBranchTool) IsDestructive() bool { return false }
+
+func (g *GitBranchTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"create": {"type": "string", "description": "Create a new branch with this name"},
+			"delete": {"type": "string", "description": "Delete a branch with this name"},
+			"force_delete": {"type": "boolean", "description": "Force delete the branch"}
+		}
+	}`)
+}
+
+func (g *GitBranchTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path        string `json:"path"`
+		Create      string `json:"create"`
+		Delete      string `json:"delete"`
+		ForceDelete bool   `json:"force_delete"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	path := params.Path
+	if path == "" {
+		path = "."
+	}
+
+	args := []string{"-C", path, "branch"}
+	if params.Create != "" {
+		args = append(args, params.Create)
+	} else if params.Delete != "" {
+		if params.ForceDelete {
+			args = append(args, "-D", params.Delete)
+		} else {
+			args = append(args, "-d", params.Delete)
+		}
+	}
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Path    string `json:"path"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+		Path:    path,
+	}
+
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	return json.Marshal(result)
+}
+
+// GitCheckoutTool Git checkout tool
+type GitCheckoutTool struct{}
+
+func (g *GitCheckoutTool) Name() string        { return "git_checkout" }
+func (g *GitCheckoutTool) Description() string { return "Checkout a git branch or create a new one" }
+func (g *GitCheckoutTool) IsReadOnly() bool    { return false }
+func (g *GitCheckoutTool) IsDestructive() bool { return false }
+
+func (g *GitCheckoutTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"branch": {"type": "string", "description": "Branch name to checkout"},
+			"create": {"type": "boolean", "description": "Create the branch if it doesn't exist (-b)"}
+		},
+		"required": ["branch"]
+	}`)
+}
+
+func (g *GitCheckoutTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path   string `json:"path"`
+		Branch string `json:"branch"`
+		Create bool   `json:"create"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	path := params.Path
+	if path == "" {
+		path = "."
+	}
+
+	args := []string{"-C", path, "checkout"}
+	if params.Create {
+		args = append(args, "-b", params.Branch)
+	} else {
+		args = append(args, params.Branch)
+	}
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Path    string `json:"path"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+		Path:    path,
+	}
+
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry creates a registry with the default tools
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -1095,6 +1226,8 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&GitDiffTool{})
 	registry.Register(&GitLogTool{})
 	registry.Register(&GitCommitTool{})
+	registry.Register(&GitBranchTool{})
+	registry.Register(&GitCheckoutTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})
