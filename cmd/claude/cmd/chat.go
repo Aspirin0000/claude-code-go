@@ -12,9 +12,11 @@ import (
 	"github.com/Aspirin0000/claude-code-go/cmd/claude/commands"
 	"github.com/Aspirin0000/claude-code-go/internal/api"
 	"github.com/Aspirin0000/claude-code-go/internal/config"
+	"github.com/Aspirin0000/claude-code-go/internal/hooks"
 	"github.com/Aspirin0000/claude-code-go/internal/mcp"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
 	"github.com/Aspirin0000/claude-code-go/internal/tools"
+	"github.com/Aspirin0000/claude-code-go/internal/types"
 	"github.com/Aspirin0000/claude-code-go/pkg/utils"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -133,6 +135,15 @@ func runSimpleREPL() error {
 		client = api.NewClient(apiKey, model)
 	}
 
+	// Run session start hooks
+	if hookMgr := hooks.GetGlobalManager(); hookMgr.HasHooks(types.HookEventSessionStart) {
+		if result, err := hookMgr.ExecuteSessionStart(ctx); err == nil && result.Continue {
+			if result.InitialUserMessage != "" {
+				promptFlag = result.InitialUserMessage
+			}
+		}
+	}
+
 	printWelcome()
 
 	historyFile := filepath.Join(utils.GetClaudeConfigHomeDir(), "repl_history")
@@ -227,6 +238,26 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 	if client == nil {
 		fmt.Println("⚠️  AI client not initialized. Please configure API key.")
 		return nil
+	}
+
+	// Execute UserPromptSubmit hooks
+	hookMgr := hooks.GetGlobalManager()
+	if hookMgr.HasHooks(types.HookEventUserPromptSubmit) {
+		result, err := hookMgr.ExecuteUserPromptSubmit(ctx, message)
+		if err != nil {
+			fmt.Printf("Hook error: %v\n", err)
+		} else {
+			if !result.Continue {
+				if result.SuppressOutput {
+					return nil
+				}
+				fmt.Println("🚫 Prompt blocked by hook.")
+				return nil
+			}
+			if result.AdditionalContext != "" {
+				message = message + "\n\n[Context: " + result.AdditionalContext + "]"
+			}
+		}
 	}
 
 	state.GlobalState.AddMessage(state.Message{
@@ -434,6 +465,19 @@ func NewApp() *App {
 		client.SetProvider(cfg.Provider)
 	}
 
+	// Run session start hooks
+	if hookMgr := hooks.GetGlobalManager(); hookMgr.HasHooks(types.HookEventSessionStart) {
+		if result, err := hookMgr.ExecuteSessionStart(context.Background()); err == nil && result.Continue {
+			if result.InitialUserMessage != "" {
+				state.GlobalState.AddMessage(state.Message{
+					Type:    "user",
+					Role:    "user",
+					Content: result.InitialUserMessage,
+				})
+			}
+		}
+	}
+
 	return &App{
 		config:       cfg,
 		apiClient:    client,
@@ -561,10 +605,40 @@ func (a *App) View() string {
 }
 
 func (a *App) handleInput() (tea.Model, tea.Cmd) {
+	input := a.input
+
+	// Execute UserPromptSubmit hooks
+	hookMgr := hooks.GetGlobalManager()
+	if hookMgr.HasHooks(types.HookEventUserPromptSubmit) {
+		result, err := hookMgr.ExecuteUserPromptSubmit(context.Background(), input)
+		if err != nil {
+			state.GlobalState.AddMessage(state.Message{
+				Role:    "system",
+				Type:    "system",
+				Content: fmt.Sprintf("Hook error: %v", err),
+			})
+			return a, nil
+		}
+		if !result.Continue {
+			if !result.SuppressOutput {
+				state.GlobalState.AddMessage(state.Message{
+					Role:    "system",
+					Type:    "system",
+					Content: "🚫 Prompt blocked by hook.",
+				})
+			}
+			a.input = ""
+			return a, nil
+		}
+		if result.AdditionalContext != "" {
+			input = input + "\n\n[Context: " + result.AdditionalContext + "]"
+		}
+	}
+
 	state.GlobalState.AddMessage(state.Message{
 		Role:    "user",
 		Type:    "user",
-		Content: a.input,
+		Content: input,
 	})
 	a.inputHistory = append(a.inputHistory, a.input)
 	a.historyIndex = len(a.inputHistory)
@@ -684,6 +758,27 @@ func buildToolsList(registry *tools.Registry) []api.Tool {
 }
 
 func executeTool(ctx context.Context, registry *tools.Registry, toolName string, input json.RawMessage) (string, error) {
+	// Execute PreToolUse hooks
+	hookMgr := hooks.GetGlobalManager()
+	var toolInput map[string]interface{}
+	if len(input) > 0 {
+		_ = json.Unmarshal(input, &toolInput)
+	}
+	if hookMgr.HasHooks(types.HookEventPreToolUse) {
+		result, err := hookMgr.ExecutePreToolUse(ctx, toolName, toolInput)
+		if err != nil {
+			return "", fmt.Errorf("hook error: %w", err)
+		}
+		if !result.Continue || result.Decision == types.PermissionBehaviorDeny {
+			return "", fmt.Errorf("tool use blocked by hook: %s", result.DecisionReason)
+		}
+		if len(result.UpdatedInput) > 0 {
+			updatedInput, _ := json.Marshal(result.UpdatedInput)
+			input = updatedInput
+			toolInput = result.UpdatedInput
+		}
+	}
+
 	if strings.HasPrefix(toolName, "mcp__") {
 		var arguments map[string]interface{}
 		if len(input) > 0 {
