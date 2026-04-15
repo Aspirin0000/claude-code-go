@@ -478,6 +478,10 @@ type App struct {
 	loading      bool
 	width        int
 	height       int
+	// streaming state
+	streamingText string
+	streamBlocks  []api.ContentBlock
+	streamCh      <-chan api.StreamEvent
 }
 
 func runInteractive() error {
@@ -780,16 +784,46 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
 	case apiResponseMsg:
-		a.loading = false
 		if msg.err != nil {
+			a.loading = false
 			state.GlobalState.AddMessage(state.Message{
 				Type:    "system",
 				Role:    "system",
 				Content: fmt.Sprintf("Error: %v", msg.err),
 			})
+			a.input = ""
+			a.scrollOffset = 0
+			return a, nil
 		}
+		if msg.resp != nil {
+			return a.handleAPIResponse(msg.resp)
+		}
+		a.loading = false
 		a.input = ""
 		a.scrollOffset = 0
+	case streamEventMsg:
+		if msg.ok {
+			a.processStreamEvent(msg.event)
+			return a, a.pollStream()
+		}
+		// channel closed or error
+		resp, err := a.finishStream()
+		if err != nil {
+			a.loading = false
+			state.GlobalState.AddMessage(state.Message{
+				Type:    "system",
+				Role:    "system",
+				Content: fmt.Sprintf("Error: %v", err),
+			})
+			a.input = ""
+			a.scrollOffset = 0
+			return a, nil
+		}
+		// Continue with normal response handling
+		return a.handleAPIResponse(resp)
+	case toolRoundCompleteMsg:
+		// Trigger next API round after tools complete
+		return a, a.processMessage()
 	}
 	return a, nil
 }
@@ -866,8 +900,129 @@ func (a *App) View() string {
 	b.WriteString("\n")
 	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
 	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
+	// Show streaming text preview if active
+	if a.loading && a.streamingText != "" {
+		b.WriteString(assistantStyle.Render("Claude: ") + a.streamingText + "▌")
+		b.WriteString("\n\n")
+	}
+
+	if a.loading && a.streamingText == "" {
+		b.WriteString(assistantStyle.Render("Thinking... ⏳") + "\n\n")
+	}
+
+	b.WriteString(dividerStyle.Render(strings.Repeat("─", a.width)))
+	b.WriteString("\n")
+	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
+	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
 	return b.String()
 }
+
+func (a *App) processStreamEvent(event api.StreamEvent) {
+	switch event.Type {
+	case "content_block_start":
+		if event.ContentBlock != nil {
+			a.streamBlocks = append(a.streamBlocks, *event.ContentBlock)
+		}
+	case "content_block_delta":
+		if event.Index >= 0 && event.Index < len(a.streamBlocks) {
+			block := &a.streamBlocks[event.Index]
+			switch event.Delta.Type {
+			case "text_delta":
+				block.Text += event.Delta.Text
+				a.streamingText += event.Delta.Text
+			case "input_json_delta":
+				// accumulate for tool_use later
+			}
+		}
+	}
+}
+
+func (a *App) pollStream() tea.Cmd {
+	return func() tea.Msg {
+		if a.streamCh == nil {
+			return streamEventMsg{ok: false}
+		}
+		event, ok := <-a.streamCh
+		return streamEventMsg{event: event, ok: ok}
+	}
+}
+
+func (a *App) finishStream() (*api.Response, error) {
+	resp := &api.Response{Role: "assistant", Content: a.streamBlocks}
+	a.streamingText = ""
+	a.streamBlocks = nil
+	a.streamCh = nil
+	return resp, nil
+}
+
+// handleAPIResponse processes a complete API response in TUI mode.
+func (a *App) handleAPIResponse(resp *api.Response) (tea.Model, tea.Cmd) {
+	var textParts []string
+	var toolUses []api.ContentBlock
+	for _, block := range resp.Content {
+		switch block.Type {
+		case "text":
+			textParts = append(textParts, block.Text)
+		case "tool_use":
+			toolUses = append(toolUses, block)
+		}
+	}
+
+	assistantBlocks := make([]state.ContentBlock, len(resp.Content))
+	for i, b := range resp.Content {
+		assistantBlocks[i] = state.ContentBlock{
+			Type:      b.Type,
+			Text:      b.Text,
+			ID:        b.ID,
+			Name:      b.Name,
+			Input:     b.Input,
+			ToolUseID: b.ToolUseID,
+		}
+	}
+	state.GlobalState.AddMessage(state.Message{
+		Type:    "assistant",
+		Role:    "assistant",
+		Content: strings.Join(textParts, "\n"),
+		Blocks:  assistantBlocks,
+	})
+
+	if len(toolUses) == 0 {
+		a.loading = false
+		a.input = ""
+		a.scrollOffset = 0
+		return a, nil
+	}
+
+	// Execute tools asynchronously
+	return a, a.executeTools(toolUses)
+}
+
+func (a *App) executeTools(toolUses []api.ContentBlock) tea.Cmd {
+	return func() tea.Msg {
+		ctx := context.WithValue(context.Background(), tools.APIClientContextKey, a.apiClient)
+		for _, block := range toolUses {
+			resultText, err := executeTool(ctx, a.toolRegistry, block.Name, block.Input)
+			if err != nil {
+				resultText = fmt.Sprintf("Error: %v", err)
+			}
+			state.GlobalState.AddMessage(state.Message{
+				Type: "user",
+				Role: "user",
+				Blocks: []state.ContentBlock{
+					{
+						Type:      "tool_result",
+						ToolUseID: block.ID,
+						Content:   resultText,
+					},
+				},
+			})
+		}
+		// After tool execution, trigger another API round
+		return toolRoundCompleteMsg{}
+	}
+}
+
+type toolRoundCompleteMsg struct{}
 
 func (a *App) handleInput() (tea.Model, tea.Cmd) {
 	input := a.input
@@ -917,7 +1072,14 @@ func (a *App) handleInput() (tea.Model, tea.Cmd) {
 
 type apiResponseMsg struct {
 	content string
+	resp    *api.Response
 	err     error
+}
+
+// streamEventMsg carries a single SSE event from ChatStream.
+type streamEventMsg struct {
+	event api.StreamEvent
+	ok    bool
 }
 
 func (a *App) processMessage() tea.Cmd {
@@ -927,17 +1089,15 @@ func (a *App) processMessage() tea.Cmd {
 		}
 
 		toolsList := buildToolsList(a.toolRegistry)
-		const maxRounds = 10
+		apiMessages := buildAPIMessagesFromState()
+		start := time.Now()
 
-		for round := 0; round < maxRounds; round++ {
-			apiMessages := buildAPIMessagesFromState()
-			start := time.Now()
-			resp, err := a.apiClient.ChatWithBlocks(context.Background(), apiMessages, toolsList)
-			duration := time.Since(start).Milliseconds()
+		if os.Getenv("CLAUDE_STREAM") == "1" {
+			ch, err := a.apiClient.ChatStream(context.Background(), apiMessages, toolsList)
 			if err != nil {
 				analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
 					"success":     false,
-					"duration_ms": duration,
+					"duration_ms": time.Since(start).Milliseconds(),
 					"model":       a.apiClient.GetModel(),
 					"error":       err.Error(),
 				})
@@ -945,77 +1105,33 @@ func (a *App) processMessage() tea.Cmd {
 			}
 			analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
 				"success":     true,
-				"duration_ms": duration,
+				"duration_ms": time.Since(start).Milliseconds(),
 				"model":       a.apiClient.GetModel(),
-				"blocks":      len(resp.Content),
 			})
-
-			var textParts []string
-			var toolUses []api.ContentBlock
-
-			for _, block := range resp.Content {
-				switch block.Type {
-				case "text":
-					textParts = append(textParts, block.Text)
-				case "tool_use":
-					toolUses = append(toolUses, block)
-				}
-			}
-
-			if len(toolUses) == 0 {
-				content := strings.Join(textParts, "\n")
-				if content != "" {
-					state.GlobalState.AddMessage(state.Message{
-						Type:    "assistant",
-						Role:    "assistant",
-						Content: content,
-					})
-				}
-				return apiResponseMsg{content: content}
-			}
-
-			// Assistant requested tools
-			assistantBlocks := make([]state.ContentBlock, len(resp.Content))
-			for i, b := range resp.Content {
-				assistantBlocks[i] = state.ContentBlock{
-					Type:      b.Type,
-					Text:      b.Text,
-					ID:        b.ID,
-					Name:      b.Name,
-					Input:     b.Input,
-					ToolUseID: b.ToolUseID,
-				}
-			}
-			state.GlobalState.AddMessage(state.Message{
-				Type:    "assistant",
-				Role:    "assistant",
-				Content: strings.Join(textParts, "\n"),
-				Blocks:  assistantBlocks,
-			})
-
-			// Execute tools
-			ctx := context.WithValue(context.Background(), tools.APIClientContextKey, a.apiClient)
-			for _, block := range toolUses {
-				resultText, err := executeTool(ctx, a.toolRegistry, block.Name, block.Input)
-				if err != nil {
-					resultText = fmt.Sprintf("Error: %v", err)
-				}
-
-				state.GlobalState.AddMessage(state.Message{
-					Type: "user",
-					Role: "user",
-					Blocks: []state.ContentBlock{
-						{
-							Type:      "tool_result",
-							ToolUseID: block.ID,
-							Content:   resultText,
-						},
-					},
-				})
-			}
+			a.streamCh = ch
+			a.streamingText = ""
+			a.streamBlocks = nil
+			return a.pollStream()
 		}
 
-		return apiResponseMsg{content: "Maximum tool rounds reached"}
+		resp, err := a.apiClient.ChatWithBlocks(context.Background(), apiMessages, toolsList)
+		duration := time.Since(start).Milliseconds()
+		if err != nil {
+			analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
+				"success":     false,
+				"duration_ms": duration,
+				"model":       a.apiClient.GetModel(),
+				"error":       err.Error(),
+			})
+			return apiResponseMsg{err: err}
+		}
+		analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
+			"success":     true,
+			"duration_ms": duration,
+			"model":       a.apiClient.GetModel(),
+			"blocks":      len(resp.Content),
+		})
+		return apiResponseMsg{resp: resp}
 	}
 }
 

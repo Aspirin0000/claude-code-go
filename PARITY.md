@@ -301,6 +301,7 @@ Evidence: `internal/types/`
 - ✅ JSON mode (`--json`) for structured input/output
 - ✅ HTTP server mode (`--serve`) with /chat, /health, /tools endpoints
 - ✅ TUI status bar with model name and message count
+- ✅ Streaming text output in REPL and TUI via `CLAUDE_STREAM=1`
 
 ### Missing
 - ❌ Structured IO
@@ -446,6 +447,7 @@ All P0 items are now functional:
 25. ✅ Implemented HTTP server mode (`--serve`) with /chat, /health, /tools endpoints
 26. ✅ Implemented streaming text output in REPL via `CLAUDE_STREAM=1`
 27. ✅ Extended StreamEvent to support full Anthropic SSE event assembly
+28. ✅ Implemented streaming text output in TUI with event-driven updates
 
 ### Build Status
 - ✅ `go build ./...` - Success
