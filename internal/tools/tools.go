@@ -971,6 +971,13 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&GitMergeTool{})
 	registry.Register(&GitShowTool{})
 	registry.Register(&HttpRequestTool{})
+	registry.Register(&DockerPsTool{})
+	registry.Register(&DockerLogsTool{})
+	registry.Register(&NpmInstallTool{})
+	registry.Register(&NpmRunTool{})
+	registry.Register(&GoBuildTool{})
+	registry.Register(&GoTestTool{})
+	registry.Register(&PythonRunTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})
