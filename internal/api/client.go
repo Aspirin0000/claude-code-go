@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"math"
 )
 
 // Client is an API client.
@@ -20,6 +22,7 @@ type Client struct {
 	model      string
 	provider   string
 	httpClient *http.Client
+	maxRetries int
 }
 
 // Message represents a chat message.
@@ -70,13 +73,46 @@ type Delta struct {
 // NewClient creates a new API client.
 func NewClient(apiKey, model string) *Client {
 	return &Client{
-		apiKey:  apiKey,
-		baseURL: "https://api.anthropic.com/v1",
-		model:   model,
+		apiKey:     apiKey,
+		baseURL:    "https://api.anthropic.com/v1",
+		model:      model,
+		maxRetries: 3,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second,
 		},
 	}
+}
+
+// SetMaxRetries configures the maximum number of retries for transient failures.
+func (c *Client) SetMaxRetries(n int) {
+	c.maxRetries = n
+}
+
+// isRetriable determines whether an error or HTTP response is worth retrying.
+func isRetriable(err error, statusCode int) bool {
+	if err != nil {
+		return true
+	}
+	if statusCode == http.StatusTooManyRequests {
+		return true
+	}
+	if statusCode >= 500 {
+		return true
+	}
+	return false
+}
+
+// backoff computes the sleep duration for a given retry attempt using exponential backoff.
+func backoff(attempt int) time.Duration {
+	base := 1.0
+	maxDelay := 30.0
+	delay := base * math.Pow(2, float64(attempt))
+	if delay > maxDelay {
+		delay = maxDelay
+	}
+	// Add jitter: 0-1s
+	jitter := time.Duration(delay)*time.Second + time.Duration(time.Now().UnixNano()%1e9)
+	return jitter
 }
 
 // ChatWithBlocks sends a chat request and returns content blocks.
@@ -146,9 +182,48 @@ func (c *Client) ChatWithBlocks(ctx context.Context, messages []Message, tools [
 	req.Header.Set("x-api-key", c.apiKey)
 	req.Header.Set("anthropic-version", "2023-06-01")
 
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("do request: %w", err)
+	var resp *http.Response
+	var lastErr error
+	var statusCode int
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
+		if attempt > 0 {
+			time.Sleep(backoff(attempt - 1))
+		}
+		resp, err = c.httpClient.Do(req)
+		lastErr = err
+		statusCode = 0
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			if !isRetriable(err, 0) || attempt == c.maxRetries {
+				break
+			}
+			// Recreate request body for retry
+			req, _ = http.NewRequestWithContext(ctx, "POST", c.baseURL+"/messages", bytes.NewBuffer(jsonBody))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("x-api-key", c.apiKey)
+			req.Header.Set("anthropic-version", "2023-06-01")
+			continue
+		}
+		statusCode = resp.StatusCode
+		if !isRetriable(nil, statusCode) {
+			break
+		}
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		lastErr = fmt.Errorf("API error %d: %s", statusCode, string(body))
+		if attempt == c.maxRetries {
+			break
+		}
+		// Recreate request body for retry
+		req, _ = http.NewRequestWithContext(ctx, "POST", c.baseURL+"/messages", bytes.NewBuffer(jsonBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", c.apiKey)
+		req.Header.Set("anthropic-version", "2023-06-01")
+	}
+	if lastErr != nil {
+		return nil, fmt.Errorf("do request: %w", lastErr)
 	}
 	defer resp.Body.Close()
 
