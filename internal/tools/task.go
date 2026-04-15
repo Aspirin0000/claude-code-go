@@ -111,14 +111,12 @@ func (tm *TaskManager) loadTasks() error {
 	return nil
 }
 
-// saveTasks Save tasks to file
+// saveTasks Save tasks to file (caller must hold write lock)
 func (tm *TaskManager) saveTasks() error {
-	tm.mu.RLock()
 	tasks := make([]*Task, 0, len(tm.tasks))
 	for _, task := range tm.tasks {
 		tasks = append(tasks, task)
 	}
-	tm.mu.RUnlock()
 
 	// Ensure directory exists
 	if err := os.MkdirAll(tm.dataDir, 0755); err != nil {
@@ -160,11 +158,12 @@ func (tm *TaskManager) CreateTask(content string, priority TaskPriority, parentI
 
 	tm.mu.Lock()
 	tm.tasks[task.ID] = task
-	tm.mu.Unlock()
 
 	if err := tm.saveTasks(); err != nil {
+		tm.mu.Unlock()
 		return nil, err
 	}
+	tm.mu.Unlock()
 
 	return task, nil
 }
@@ -254,7 +253,7 @@ func (tm *TaskManager) ListTasks(statusFilter string) []*Task {
 // StopTask Stop a task (set status to cancelled)
 func (tm *TaskManager) StopTask(taskID string) (*Task, error) {
 	return tm.UpdateTask(taskID, map[string]interface{}{
-		"status": TaskStatusCancelled,
+		"status": string(TaskStatusCancelled),
 	})
 }
 
