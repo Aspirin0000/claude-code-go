@@ -159,7 +159,7 @@ func (c *HelpCommand) showCommandHelp(cmdName string) error {
 
 // showQuickHelp displays a quick reference
 func (c *HelpCommand) showQuickHelp() {
-	fmt.Println(`
+	fmt.Print(`
 ╔══════════════════════════════════════════════════════════╗
 ║                    QUICK REFERENCE                       ║
 ╠══════════════════════════════════════════════════════════╣

@@ -28,13 +28,13 @@ type ConfigMeta struct {
 
 // ConfigDefinitions defines all available configuration keys
 var ConfigDefinitions = []ConfigMeta{
-	{Key: "api_key", Type: "string", Default: "", Description: "API密钥"},
-	{Key: "model", Type: "string", Default: "claude-sonnet-4-20250514", Description: "默认AI模型"},
-	{Key: "theme", Type: "string", Default: "dark", Description: "界面主题 (dark/light)"},
-	{Key: "verbose", Type: "bool", Default: false, Description: "启用详细日志输出"},
-	{Key: "provider", Type: "string", Default: "anthropic", Description: "API提供商"},
-	{Key: "auto_save", Type: "bool", Default: true, Description: "启用自动保存功能"},
-	{Key: "auto_save_dir", Type: "string", Default: "", Description: "自动保存目录路径"},
+	{Key: "api_key", Type: "string", Default: "", Description: "Anthropic API key"},
+	{Key: "model", Type: "string", Default: "claude-sonnet-4-20250514", Description: "Default AI model"},
+	{Key: "theme", Type: "string", Default: "dark", Description: "UI theme (dark/light)"},
+	{Key: "verbose", Type: "bool", Default: false, Description: "Enable verbose logging"},
+	{Key: "provider", Type: "string", Default: "anthropic", Description: "API provider"},
+	{Key: "auto_save", Type: "bool", Default: true, Description: "Enable automatic session saving"},
+	{Key: "auto_save_dir", Type: "string", Default: "", Description: "Custom auto-save directory"},
 }
 
 // NewConfigCommand creates a new config command
