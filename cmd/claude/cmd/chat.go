@@ -1,7 +1,4 @@
 // cmd/claude/cmd/chat.go
-// 来源: src/screens/REPL.tsx + src/query.ts
-// 重构: 交互式对话和管道模式实现
-
 package cmd
 
 import (
@@ -77,7 +74,6 @@ func runCLI() error {
 		}
 	}
 
-	// Check if we should use TUI or simple REPL
 	if os.Getenv("CLAUDE_TUI") == "1" {
 		return runTUI()
 	}
@@ -98,7 +94,6 @@ func runTUI() error {
 func runSimpleREPL() error {
 	ctx := context.Background()
 
-	// Load configuration
 	cfgPath := config.GetConfigPath()
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
@@ -106,10 +101,8 @@ func runSimpleREPL() error {
 		cfg = config.DefaultConfig()
 	}
 
-	// Initialize session storage
 	state.InitSessionStorage(cfg)
 
-	// Setup API key
 	apiKey := apiKeyFlag
 	if apiKey == "" {
 		apiKey = os.Getenv("ANTHROPIC_API_KEY")
@@ -118,7 +111,6 @@ func runSimpleREPL() error {
 		apiKey = cfg.APIKey
 	}
 
-	// Setup model
 	model := modelFlag
 	if model == "" {
 		model = cfg.Model
@@ -127,25 +119,14 @@ func runSimpleREPL() error {
 		model = "claude-sonnet-4-20250514"
 	}
 
-	// Initialize components
 	toolRegistry := tools.NewDefaultRegistry()
 	var client *api.Client
 	if apiKey != "" {
 		client = api.NewClient(apiKey, model)
 	}
 
-	// Print welcome
 	printWelcome()
 
-	// Handle initial prompt if provided
-	if promptFlag != "" {
-		fmt.Printf("\n📝 Initial prompt: %s\n\n", promptFlag)
-		if err := processUserMessage(ctx, client, toolRegistry, promptFlag); err != nil {
-			fmt.Printf("Error: %v\n", err)
-		}
-	}
-
-	// REPL loop
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("\n❯ ")
@@ -164,13 +145,11 @@ func runSimpleREPL() error {
 			continue
 		}
 
-		// Exit commands
 		if input == "exit" || input == "quit" || input == "/exit" {
 			fmt.Println("👋 Goodbye!")
 			return nil
 		}
 
-		// Slash commands
 		if strings.HasPrefix(input, "/") {
 			if err := handleSlashCommand(ctx, input); err != nil {
 				fmt.Printf("Error: %v\n", err)
@@ -178,7 +157,6 @@ func runSimpleREPL() error {
 			continue
 		}
 
-		// Process message with AI
 		if err := processUserMessage(ctx, client, toolRegistry, input); err != nil {
 			fmt.Printf("Error: %v\n", err)
 		}
@@ -220,92 +198,100 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 		return nil
 	}
 
-	// Add user message to state
-	userMsg := state.Message{
+	state.GlobalState.AddMessage(state.Message{
 		Type:    "user",
 		Role:    "user",
 		Content: message,
-	}
-	state.GlobalState.AddMessage(userMsg)
+	})
 
-	// Get conversation history
-	messages := state.GlobalState.GetMessages()
+	toolsList := buildToolsList(registry)
+	const maxRounds = 10
 
-	// Convert to API format
-	apiMessages := make([]api.Message, 0, len(messages))
-	for _, msg := range messages {
-		role := msg.Role
-		if role == "" {
-			role = msg.Type
+	for round := 0; round < maxRounds; round++ {
+		if round == 0 {
+			fmt.Println("🤔 Thinking...")
+		} else {
+			fmt.Println("🤔 Processing tool results...")
 		}
-		apiMessages = append(apiMessages, api.Message{
-			Role:    role,
-			Content: msg.Content,
-		})
-	}
 
-	// Get tools
-	toolSchemas := registry.GetToolSchemas()
-	toolsList := make([]api.Tool, 0, len(toolSchemas))
-	for _, schema := range toolSchemas {
-		name, _ := schema["name"].(string)
-		desc, _ := schema["description"].(string)
-		inputSchema := schema["input_schema"]
+		apiMessages := buildAPIMessagesFromState()
+		resp, err := client.ChatWithBlocks(ctx, apiMessages, toolsList)
+		if err != nil {
+			return fmt.Errorf("API error: %w", err)
+		}
 
-		schemaJSON, _ := json.Marshal(inputSchema)
-		toolsList = append(toolsList, api.Tool{
-			Name:        name,
-			Description: desc,
-			InputSchema: schemaJSON,
-		})
-	}
+		var textParts []string
+		var toolUses []api.ContentBlock
 
-	// Call AI
-	fmt.Println("🤔 Thinking...")
-
-	resp, err := client.ChatWithBlocks(ctx, apiMessages, toolsList)
-	if err != nil {
-		return fmt.Errorf("API error: %w", err)
-	}
-
-	// Process response
-	var responseContent strings.Builder
-	for _, block := range resp.Content {
-		switch block.Type {
-		case "text":
-			responseContent.WriteString(block.Text)
-
-		case "tool_use":
-			fmt.Printf("\n🔧 Using tool: %s\n", block.Name)
-
-			result, err := registry.Call(ctx, block.Name, block.Input)
-			if err != nil {
-				fmt.Printf("   Error: %v\n", err)
-				responseContent.WriteString(fmt.Sprintf("\n[Tool %s failed: %v]\n", block.Name, err))
-			} else if !result.Success {
-				fmt.Printf("   Failed: %s\n", result.Error)
-				responseContent.WriteString(fmt.Sprintf("\n[Tool %s failed: %s]\n", block.Name, result.Error))
-			} else {
-				fmt.Printf("   Success\n")
-				resultMsg := state.Message{
-					Type:    "user",
-					Role:    "user",
-					Content: fmt.Sprintf("Tool %s result: %s", block.Name, string(result.Data)),
-				}
-				state.GlobalState.AddMessage(resultMsg)
+		for _, block := range resp.Content {
+			switch block.Type {
+			case "text":
+				textParts = append(textParts, block.Text)
+			case "tool_use":
+				toolUses = append(toolUses, block)
 			}
 		}
-	}
 
-	// Add AI response to state and display
-	if responseContent.Len() > 0 {
-		assistantMsg := state.Message{
+		if len(toolUses) == 0 {
+			content := strings.Join(textParts, "\n")
+			if content != "" {
+				state.GlobalState.AddMessage(state.Message{
+					Type:    "assistant",
+					Role:    "assistant",
+					Content: content,
+				})
+				fmt.Printf("\n🤖 %s\n", content)
+			}
+			break
+		}
+
+		// Assistant requested tools - add assistant message with blocks
+		assistantBlocks := make([]state.ContentBlock, len(resp.Content))
+		for i, b := range resp.Content {
+			assistantBlocks[i] = state.ContentBlock{
+				Type:      b.Type,
+				Text:      b.Text,
+				ID:        b.ID,
+				Name:      b.Name,
+				Input:     b.Input,
+				ToolUseID: b.ToolUseID,
+			}
+		}
+		state.GlobalState.AddMessage(state.Message{
 			Type:    "assistant",
 			Role:    "assistant",
-			Content: responseContent.String(),
+			Content: strings.Join(textParts, "\n"),
+			Blocks:  assistantBlocks,
+		})
+
+		// Execute tools
+		for _, block := range toolUses {
+			fmt.Printf("\n🔧 Using tool: %s\n", block.Name)
+			result, err := registry.Call(ctx, block.Name, block.Input)
+			var resultText string
+			if err != nil {
+				fmt.Printf("   Error: %v\n", err)
+				resultText = fmt.Sprintf("Error: %v", err)
+			} else if !result.Success {
+				fmt.Printf("   Failed: %s\n", result.Error)
+				resultText = fmt.Sprintf("Error: %s", result.Error)
+			} else {
+				fmt.Printf("   Success\n")
+				resultText = string(result.Data)
+			}
+
+			state.GlobalState.AddMessage(state.Message{
+				Type: "user",
+				Role: "user",
+				Blocks: []state.ContentBlock{
+					{
+						Type:      "tool_result",
+						ToolUseID: block.ID,
+						Text:      resultText,
+					},
+				},
+			})
 		}
-		state.GlobalState.AddMessage(assistantMsg)
-		fmt.Printf("\n🤖 %s\n", responseContent.String())
 	}
 
 	if state.GlobalSessionStorage != nil {
@@ -315,7 +301,37 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 	return nil
 }
 
-// 样式定义 (对应原 TS 中的 Chalk/Kleur 样式)
+func buildAPIMessagesFromState() []api.Message {
+	messages := state.GlobalState.GetMessages()
+	apiMessages := make([]api.Message, 0, len(messages))
+	for _, msg := range messages {
+		role := msg.Role
+		if role == "" {
+			role = msg.Type
+		}
+		apiMsg := api.Message{
+			Role:    role,
+			Content: msg.Content,
+		}
+		if len(msg.Blocks) > 0 {
+			apiMsg.Blocks = make([]api.ContentBlock, len(msg.Blocks))
+			for i, b := range msg.Blocks {
+				apiMsg.Blocks[i] = api.ContentBlock{
+					Type:      b.Type,
+					Text:      b.Text,
+					ID:        b.ID,
+					Name:      b.Name,
+					Input:     b.Input,
+					ToolUseID: b.ToolUseID,
+				}
+			}
+		}
+		apiMessages = append(apiMessages, apiMsg)
+	}
+	return apiMessages
+}
+
+// Styles
 var (
 	titleStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7D56F4")).Background(lipgloss.Color("#1a1a2e")).Padding(1, 2).Width(50)
 	userStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF88")).Bold(true)
@@ -325,76 +341,45 @@ var (
 	helpStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true)
 )
 
-// Message 消息模型 (对应原 TS 中的 Message 类型)
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-// App TUI 应用模型 (对应原 TS 中的 REPL 组件状态)
+// App TUI application model
 type App struct {
 	config       *config.Config
 	apiClient    *api.Client
 	toolRegistry *tools.Registry
-	messages     []Message
 	input        string
 	loading      bool
 	width        int
 	height       int
 }
 
-// runInteractive 运行交互式 TUI 模式
-// 对应原 TS: src/screens/REPL.tsx - 启动交互式界面
 func runInteractive() error {
 	app := NewApp()
 	p := tea.NewProgram(app, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		return fmt.Errorf("启动 TUI 失败: %w", err)
+		return fmt.Errorf("failed to start TUI: %w", err)
 	}
 	return nil
 }
 
-// runSingleShot 运行单条命令模式
-// 对应原 TS: pipe 模式中的单条提示处理
 func runSingleShot(prompt string) error {
 	app := NewApp()
 	if app.apiClient == nil {
 		return fmt.Errorf("AI client not initialized; please configure API key")
 	}
-
-	// 构建消息
-	messages := []api.Message{{Role: "user", Content: prompt}}
-
-	// 获取工具
-	toolsList := buildToolsList(app.toolRegistry)
-
-	// 调用 API
-	resp, err := app.apiClient.Chat(context.Background(), messages, toolsList)
-	if err != nil {
-		return fmt.Errorf("API 调用失败: %w", err)
-	}
-
-	fmt.Println(resp.Content)
-	return nil
+	return processUserMessage(context.Background(), app.apiClient, app.toolRegistry, prompt)
 }
 
-// runPipeMode 运行管道模式
-// 对应原 TS: -p/--print 模式，从 stdin 读取输入
 func runPipeMode(input string) error {
 	return runSingleShot(input)
 }
 
-// NewApp 创建新的应用实例
-// 对应原 TS: REPL 组件的初始化逻辑
 func NewApp() *App {
-	// Load configuration
 	cfgPath := config.GetConfigPath()
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		cfg = config.DefaultConfig()
 	}
 
-	// Override from environment variables
 	if apiKey := os.Getenv("ANTHROPIC_API_KEY"); apiKey != "" {
 		cfg.APIKey = apiKey
 	}
@@ -405,10 +390,8 @@ func NewApp() *App {
 		cfg.Provider = provider
 	}
 
-	// Initialize session storage for TUI/single-shot paths too
 	state.InitSessionStorage(cfg)
 
-	// Create API client only when configured
 	var client *api.Client
 	if cfg.APIKey != "" {
 		client = api.NewClient(cfg.APIKey, cfg.Model)
@@ -419,17 +402,13 @@ func NewApp() *App {
 		config:       cfg,
 		apiClient:    client,
 		toolRegistry: tools.NewDefaultRegistry(),
-		messages:     make([]Message, 0),
 	}
 }
 
-// Init 初始化 TUI
 func (a *App) Init() tea.Cmd {
 	return tea.EnterAltScreen
 }
 
-// Update 处理消息和输入
-// 对应原 TS: REPL 组件的事件处理逻辑
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -452,31 +431,31 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case apiResponseMsg:
 		a.loading = false
 		if msg.err != nil {
-			a.messages = append(a.messages, Message{Role: "system", Content: fmt.Sprintf("Error: %v", msg.err)})
-		} else {
-			a.messages = append(a.messages, Message{Role: "assistant", Content: msg.content})
+			state.GlobalState.AddMessage(state.Message{
+				Type:    "system",
+				Role:    "system",
+				Content: fmt.Sprintf("Error: %v", msg.err),
+			})
 		}
 		a.input = ""
 	}
 	return a, nil
 }
 
-// View 渲染界面
-// 对应原 TS: REPL 组件的渲染逻辑
 func (a *App) View() string {
 	var b strings.Builder
 
 	b.WriteString(titleStyle.Render("🚀 Claude Code Go v0.1.0"))
 	b.WriteString("\n\n")
 
-	// Show messages (limited by screen height)
+	messages := state.GlobalState.GetMessages()
 	startIdx := 0
-	if len(a.messages) > a.height-10 {
-		startIdx = len(a.messages) - (a.height - 10)
+	if len(messages) > a.height-10 {
+		startIdx = len(messages) - (a.height - 10)
 	}
 
-	for i := startIdx; i < len(a.messages); i++ {
-		msg := a.messages[i]
+	for i := startIdx; i < len(messages); i++ {
+		msg := messages[i]
 		switch msg.Role {
 		case "user":
 			b.WriteString(userStyle.Render("You: ") + msg.Content)
@@ -497,49 +476,111 @@ func (a *App) View() string {
 	return b.String()
 }
 
-// handleInput 处理用户输入
 func (a *App) handleInput() (tea.Model, tea.Cmd) {
-	a.messages = append(a.messages, Message{Role: "user", Content: a.input})
+	state.GlobalState.AddMessage(state.Message{
+		Role:    "user",
+		Type:    "user",
+		Content: a.input,
+	})
 	a.loading = true
+	a.input = ""
 	return a, a.processMessage()
 }
 
-// apiResponseMsg API 响应消息
 type apiResponseMsg struct {
 	content string
 	err     error
 }
 
-// processMessage 处理消息（包括工具调用）
-// 对应原 TS: query.ts 中的主查询逻辑
 func (a *App) processMessage() tea.Cmd {
 	return func() tea.Msg {
 		if a.apiClient == nil {
 			return apiResponseMsg{err: fmt.Errorf("AI client not initialized; please configure API key")}
 		}
 
-		// Convert message format
-		apiMessages := make([]api.Message, len(a.messages))
-		for i, msg := range a.messages {
-			apiMessages[i] = api.Message{Role: msg.Role, Content: msg.Content}
-		}
-
-		// Get tool list
 		toolsList := buildToolsList(a.toolRegistry)
+		const maxRounds = 10
 
-		// Call API
-		resp, err := a.apiClient.ChatWithBlocks(context.Background(), apiMessages, toolsList)
-		if err != nil {
-			return apiResponseMsg{err: err}
+		for round := 0; round < maxRounds; round++ {
+			apiMessages := buildAPIMessagesFromState()
+			resp, err := a.apiClient.ChatWithBlocks(context.Background(), apiMessages, toolsList)
+			if err != nil {
+				return apiResponseMsg{err: err}
+			}
+
+			var textParts []string
+			var toolUses []api.ContentBlock
+
+			for _, block := range resp.Content {
+				switch block.Type {
+				case "text":
+					textParts = append(textParts, block.Text)
+				case "tool_use":
+					toolUses = append(toolUses, block)
+				}
+			}
+
+			if len(toolUses) == 0 {
+				content := strings.Join(textParts, "\n")
+				if content != "" {
+					state.GlobalState.AddMessage(state.Message{
+						Type:    "assistant",
+						Role:    "assistant",
+						Content: content,
+					})
+				}
+				return apiResponseMsg{content: content}
+			}
+
+			// Assistant requested tools
+			assistantBlocks := make([]state.ContentBlock, len(resp.Content))
+			for i, b := range resp.Content {
+				assistantBlocks[i] = state.ContentBlock{
+					Type:      b.Type,
+					Text:      b.Text,
+					ID:        b.ID,
+					Name:      b.Name,
+					Input:     b.Input,
+					ToolUseID: b.ToolUseID,
+				}
+			}
+			state.GlobalState.AddMessage(state.Message{
+				Type:    "assistant",
+				Role:    "assistant",
+				Content: strings.Join(textParts, "\n"),
+				Blocks:  assistantBlocks,
+			})
+
+			// Execute tools
+			for _, block := range toolUses {
+				result, err := a.toolRegistry.Call(context.Background(), block.Name, block.Input)
+				var resultText string
+				if err != nil {
+					resultText = fmt.Sprintf("Error: %v", err)
+				} else if !result.Success {
+					resultText = fmt.Sprintf("Error: %s", result.Error)
+				} else {
+					resultText = string(result.Data)
+				}
+
+				state.GlobalState.AddMessage(state.Message{
+					Type: "user",
+					Role: "user",
+					Blocks: []state.ContentBlock{
+						{
+							Type:      "tool_result",
+							ToolUseID: block.ID,
+							Text:      resultText,
+						},
+					},
+				})
+			}
 		}
 
-		// Process response
-		result := processResponse(resp, a.toolRegistry)
-		return apiResponseMsg{content: result}
+		return apiResponseMsg{content: "Maximum tool rounds reached"}
 	}
 }
 
-// buildToolsList builds the tool list for the API.
 func buildToolsList(registry *tools.Registry) []api.Tool {
 	toolSchemas := registry.GetToolSchemas()
 	toolsList := make([]api.Tool, len(toolSchemas))
@@ -552,53 +593,4 @@ func buildToolsList(registry *tools.Registry) []api.Tool {
 		}
 	}
 	return toolsList
-}
-
-// processResponse handles API responses, including tool calls.
-func processResponse(resp *api.Response, registry *tools.Registry) string {
-	var result strings.Builder
-
-	for _, block := range resp.Content {
-		switch block.Type {
-		case "text":
-			result.WriteString(block.Text)
-
-		case "tool_use":
-			result.WriteString(fmt.Sprintf("\n🔧 Using tool: %s\n", block.Name))
-
-			// Execute tool
-			toolResult, err := registry.Call(context.Background(), block.Name, block.Input)
-			if err != nil {
-				result.WriteString(fmt.Sprintf("❌ Tool execution failed: %v\n", err))
-			} else {
-				// Format output
-				formatToolResult(toolResult.Data, &result)
-			}
-		}
-	}
-
-	return result.String()
-}
-
-// formatToolResult formats tool execution output
-func formatToolResult(data json.RawMessage, result *strings.Builder) {
-	var output map[string]interface{}
-	json.Unmarshal(data, &output)
-
-	if stdout, ok := output["stdout"].(string); ok && stdout != "" {
-		result.WriteString(fmt.Sprintf("📤 Output:\n%s\n", stdout))
-	}
-	if content, ok := output["content"].(string); ok && content != "" {
-		lines := strings.Split(content, "\n")
-		if len(lines) > 10 {
-			result.WriteString(fmt.Sprintf("📄 Content (first 10 lines):\n%s\n... (%d more lines)\n",
-				strings.Join(lines[:10], "\n"), len(lines)-10))
-		} else {
-			result.WriteString(fmt.Sprintf("📄 Content:\n%s\n", content))
-		}
-	}
-	if files, ok := output["files"].([]interface{}); ok {
-		result.WriteString(fmt.Sprintf("📁 Found %d files\n", len(files)))
-	}
-	result.WriteString("✅ Success\n")
 }

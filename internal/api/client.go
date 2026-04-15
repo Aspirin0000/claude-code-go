@@ -23,8 +23,9 @@ type Client struct {
 
 // Message represents a chat message.
 type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
+	Role    string         `json:"role"`
+	Content string         `json:"content,omitempty"`
+	Blocks  []ContentBlock `json:"-"`
 }
 
 // Tool defines an available tool.
@@ -36,11 +37,12 @@ type Tool struct {
 
 // ContentBlock represents a block in the API response.
 type ContentBlock struct {
-	Type  string          `json:"type"`
-	Text  string          `json:"text,omitempty"`
-	ID    string          `json:"id,omitempty"`
-	Name  string          `json:"name,omitempty"`
-	Input json.RawMessage `json:"input,omitempty"`
+	Type      string          `json:"type"`
+	Text      string          `json:"text,omitempty"`
+	ID        string          `json:"id,omitempty"`
+	Name      string          `json:"name,omitempty"`
+	Input     json.RawMessage `json:"input,omitempty"`
+	ToolUseID string          `json:"tool_use_id,omitempty"`
 }
 
 // Response is an API response.
@@ -93,11 +95,27 @@ func (c *Client) ChatWithBlocks(ctx context.Context, messages []Message, tools [
 		}
 	}
 
+	type reqMsg struct {
+		Role    string      `json:"role"`
+		Content interface{} `json:"content"`
+	}
+
+	reqMessages := make([]reqMsg, len(messages))
+	for i, msg := range messages {
+		if len(msg.Blocks) > 0 {
+			reqMessages[i] = reqMsg{Role: msg.Role, Content: msg.Blocks}
+		} else {
+			reqMessages[i] = reqMsg{Role: msg.Role, Content: msg.Content}
+		}
+	}
+
 	reqBody := map[string]interface{}{
 		"model":      c.model,
 		"max_tokens": 4096,
-		"messages":   messages,
-		"tools":      toolDefs,
+		"messages":   reqMessages,
+	}
+	if len(toolDefs) > 0 {
+		reqBody["tools"] = toolDefs
 	}
 
 	if c.apiKey == "" {
@@ -198,13 +216,29 @@ func (c *Client) ChatStream(ctx context.Context, messages []Message, tools []Too
 		}
 	}
 
+	type reqMsg struct {
+		Role    string      `json:"role"`
+		Content interface{} `json:"content"`
+	}
+
+	reqMessages := make([]reqMsg, len(messages))
+	for i, msg := range messages {
+		if len(msg.Blocks) > 0 {
+			reqMessages[i] = reqMsg{Role: msg.Role, Content: msg.Blocks}
+		} else {
+			reqMessages[i] = reqMsg{Role: msg.Role, Content: msg.Content}
+		}
+	}
+
 	reqBody := map[string]interface{}{
 		"model":      c.model,
 		"max_tokens": 4096,
-		"messages":   messages,
-		"tools":      toolDefs,
-		"stream":     true,
+		"messages":   reqMessages,
 	}
+	if len(toolDefs) > 0 {
+		reqBody["tools"] = toolDefs
+	}
+	reqBody["stream"] = true
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {

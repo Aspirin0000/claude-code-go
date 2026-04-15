@@ -1,34 +1,44 @@
-// Package state 提供应用状态管理
+// Package state provides application state management.
 package state
 
 import (
+	"encoding/json"
 	"sync"
 )
 
-// Message 消息类型
+// ContentBlock represents a structured content block for multi-turn tool use.
+type ContentBlock struct {
+	Type      string          `json:"type"`
+	Text      string          `json:"text,omitempty"`
+	ID        string          `json:"id,omitempty"`
+	Name      string          `json:"name,omitempty"`
+	Input     json.RawMessage `json:"input,omitempty"`
+	ToolUseID string          `json:"tool_use_id,omitempty"`
+}
+
+// Message represents a conversation message.
 type Message struct {
 	UUID    string
 	Type    string // user, assistant, system
 	Role    string
 	Content string
+	Blocks  []ContentBlock
 }
 
-// AppState 应用状态
+// AppState holds the global application state.
 type AppState struct {
 	mu sync.RWMutex
 
-	Messages    []Message
-	Tools       []string
-	SessionID   string
-	CWD         string
-	ProjectRoot string
-
-	// 对话相关
+	Messages       []Message
+	Tools          []string
+	SessionID      string
+	CWD            string
+	ProjectRoot    string
 	ConversationID string
 	TurnCount      int
 }
 
-// NewAppState 创建新的应用状态
+// NewAppState creates a new application state.
 func NewAppState() *AppState {
 	return &AppState{
 		Messages: make([]Message, 0),
@@ -36,32 +46,31 @@ func NewAppState() *AppState {
 	}
 }
 
-// AddMessage 添加消息
+// AddMessage appends a message.
 func (s *AppState) AddMessage(msg Message) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Messages = append(s.Messages, msg)
 }
 
-// GetMessages 获取所有消息
+// GetMessages returns a copy of all messages.
 func (s *AppState) GetMessages() []Message {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// 返回副本
 	result := make([]Message, len(s.Messages))
 	copy(result, s.Messages)
 	return result
 }
 
-// ClearMessages 清空消息
+// ClearMessages removes all messages.
 func (s *AppState) ClearMessages() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Messages = make([]Message, 0)
 }
 
-// SetMessages 设置消息列表（用于压缩等操作）
+// SetMessages replaces the message list.
 func (s *AppState) SetMessages(messages []Message) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -69,26 +78,26 @@ func (s *AppState) SetMessages(messages []Message) {
 	copy(s.Messages, messages)
 }
 
-// SetSessionID 设置会话 ID
+// SetSessionID sets the session ID.
 func (s *AppState) SetSessionID(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.SessionID = id
 }
 
-// SetCWD 设置当前工作目录
+// SetCWD sets the current working directory.
 func (s *AppState) SetCWD(cwd string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.CWD = cwd
 }
 
-// IncrementTurn 增加轮次计数
+// IncrementTurn increments the turn counter.
 func (s *AppState) IncrementTurn() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.TurnCount++
 }
 
-// GlobalState 全局状态实例
+// GlobalState is the global application state instance.
 var GlobalState = NewAppState()
