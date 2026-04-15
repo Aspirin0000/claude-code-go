@@ -58,16 +58,18 @@ type Response struct {
 
 // StreamEvent is a streaming event.
 type StreamEvent struct {
-	Type    string `json:"type"`
-	Delta   Delta  `json:"delta,omitempty"`
-	Content string `json:"content,omitempty"`
-	Index   int    `json:"index,omitempty"`
+	Type         string        `json:"type"`
+	Delta        Delta         `json:"delta,omitempty"`
+	ContentBlock *ContentBlock `json:"content_block,omitempty"`
+	Content      string        `json:"content,omitempty"`
+	Index        int           `json:"index,omitempty"`
 }
 
 // Delta is streamed delta content.
 type Delta struct {
-	Type string `json:"type"`
-	Text string `json:"text,omitempty"`
+	Type        string `json:"type"`
+	Text        string `json:"text,omitempty"`
+	PartialJSON string `json:"partial_json,omitempty"`
 }
 
 // NewClient creates a new API client.
@@ -373,6 +375,46 @@ func (c *Client) ChatStream(ctx context.Context, messages []Message, tools []Too
 	}()
 
 	return ch, nil
+}
+
+// CollectStreamResponse reads a stream of events and assembles a complete Response.
+// It accumulates text deltas and tool_use input_json deltas into content blocks.
+func CollectStreamResponse(ch <-chan StreamEvent) *Response {
+	resp := &Response{Role: "assistant", Content: []ContentBlock{}}
+	var currentBlocks []ContentBlock
+	var blockPartialJSONs []string
+
+	for event := range ch {
+		switch event.Type {
+		case "content_block_start":
+			if event.ContentBlock != nil {
+				currentBlocks = append(currentBlocks, *event.ContentBlock)
+				blockPartialJSONs = append(blockPartialJSONs, "")
+			}
+		case "content_block_delta":
+			if event.Index < 0 || event.Index >= len(currentBlocks) {
+				continue
+			}
+			switch event.Delta.Type {
+			case "text_delta":
+				currentBlocks[event.Index].Text += event.Delta.Text
+			case "input_json_delta":
+				blockPartialJSONs[event.Index] += event.Delta.PartialJSON
+			}
+		case "content_block_stop":
+			if event.Index >= 0 && event.Index < len(currentBlocks) {
+				block := &currentBlocks[event.Index]
+				if block.Type == "tool_use" && blockPartialJSONs[event.Index] != "" {
+					block.Input = json.RawMessage(blockPartialJSONs[event.Index])
+				}
+			}
+		case "message_stop":
+			// finalization
+		}
+	}
+
+	resp.Content = currentBlocks
+	return resp
 }
 
 // SetProvider sets the API provider.

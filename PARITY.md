@@ -326,7 +326,7 @@ Evidence: `internal/types/`
 
 ### API Client Features
 - Chat completions with tool support
-- Streaming responses (SSE)
+- Streaming responses (SSE) with text delta and tool_use assembly
 - Multi-provider support (Anthropic, Bedrock, Vertex)
 - ✅ Exponential backoff retry for transient failures (5xx, 429, network errors)
 - Configurable timeouts
@@ -444,6 +444,8 @@ All P0 items are now functional:
 23. ✅ Enhanced TUI with status bar and visual dividers
 24. ✅ Added exponential backoff retry to API client for transient failures
 25. ✅ Implemented HTTP server mode (`--serve`) with /chat, /health, /tools endpoints
+26. ✅ Implemented streaming text output in REPL via `CLAUDE_STREAM=1`
+27. ✅ Extended StreamEvent to support full Anthropic SSE event assembly
 
 ### Build Status
 - ✅ `go build ./...` - Success

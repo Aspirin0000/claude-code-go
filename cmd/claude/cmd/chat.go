@@ -303,7 +303,13 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 
 		apiMessages := buildAPIMessagesFromState()
 		start := time.Now()
-		resp, err := client.ChatWithBlocks(ctx, apiMessages, toolsList)
+		var resp *api.Response
+		var err error
+		if os.Getenv("CLAUDE_STREAM") == "1" {
+			resp, err = streamResponse(ctx, client, apiMessages, toolsList)
+		} else {
+			resp, err = client.ChatWithBlocks(ctx, apiMessages, toolsList)
+		}
 		duration := time.Since(start).Milliseconds()
 		if err != nil {
 			analytics.LogEvent("api_request_completed", analytics.LogEventMetadata{
@@ -341,7 +347,9 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 					Role:    "assistant",
 					Content: content,
 				})
-				fmt.Printf("\n🤖 %s\n", content)
+				if os.Getenv("CLAUDE_STREAM") != "1" {
+					fmt.Printf("\n🤖 %s\n", content)
+				}
 			}
 			break
 		}
@@ -400,6 +408,19 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 	}
 
 	return nil
+}
+
+// streamResponse calls ChatStream, prints text deltas in real-time, and returns the assembled Response.
+func streamResponse(ctx context.Context, client *api.Client, messages []api.Message, toolsList []api.Tool) (*api.Response, error) {
+	ch, err := client.ChatStream(ctx, messages, toolsList)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Print("\n🤖 ")
+	resp := api.CollectStreamResponse(ch)
+	fmt.Println() // newline after streaming
+	return resp, nil
 }
 
 func buildAPIMessagesFromState() []api.Message {

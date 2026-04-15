@@ -271,3 +271,42 @@ func TestBackoff(t *testing.T) {
 		t.Errorf("expected backoff(2) > backoff(1): %v vs %v", b3, b2)
 	}
 }
+
+func TestCollectStreamResponseTextOnly(t *testing.T) {
+	ch := make(chan StreamEvent, 4)
+	ch <- StreamEvent{Type: "content_block_start", Index: 0, ContentBlock: &ContentBlock{Type: "text"}}
+	ch <- StreamEvent{Type: "content_block_delta", Index: 0, Delta: Delta{Type: "text_delta", Text: "Hello"}}
+	ch <- StreamEvent{Type: "content_block_delta", Index: 0, Delta: Delta{Type: "text_delta", Text: " world"}}
+	ch <- StreamEvent{Type: "message_stop"}
+	close(ch)
+
+	resp := CollectStreamResponse(ch)
+	if len(resp.Content) != 1 {
+		t.Fatalf("expected 1 content block, got %d", len(resp.Content))
+	}
+	if resp.Content[0].Type != "text" || resp.Content[0].Text != "Hello world" {
+		t.Errorf("unexpected text content: %+v", resp.Content[0])
+	}
+}
+
+func TestCollectStreamResponseWithToolUse(t *testing.T) {
+	ch := make(chan StreamEvent, 6)
+	ch <- StreamEvent{Type: "content_block_start", Index: 0, ContentBlock: &ContentBlock{Type: "text"}}
+	ch <- StreamEvent{Type: "content_block_delta", Index: 0, Delta: Delta{Type: "text_delta", Text: "Let me run that."}}
+	ch <- StreamEvent{Type: "content_block_start", Index: 1, ContentBlock: &ContentBlock{Type: "tool_use", ID: "tu_1", Name: "bash"}}
+	ch <- StreamEvent{Type: "content_block_delta", Index: 1, Delta: Delta{Type: "input_json_delta", PartialJSON: `{"command":"ls"}`}}
+	ch <- StreamEvent{Type: "content_block_stop", Index: 1}
+	ch <- StreamEvent{Type: "message_stop"}
+	close(ch)
+
+	resp := CollectStreamResponse(ch)
+	if len(resp.Content) != 2 {
+		t.Fatalf("expected 2 content blocks, got %d", len(resp.Content))
+	}
+	if resp.Content[1].Type != "tool_use" {
+		t.Errorf("expected tool_use, got %s", resp.Content[1].Type)
+	}
+	if string(resp.Content[1].Input) != `{"command":"ls"}` {
+		t.Errorf("unexpected tool input: %s", string(resp.Content[1].Input))
+	}
+}
