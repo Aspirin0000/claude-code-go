@@ -899,6 +899,119 @@ func (g *GitStatusTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	return json.Marshal(result)
 }
 
+// GitDiffTool Git diff tool
+type GitDiffTool struct{}
+
+func (g *GitDiffTool) Name() string        { return "git_diff" }
+func (g *GitDiffTool) Description() string { return "Show git diff for the repository" }
+func (g *GitDiffTool) IsReadOnly() bool    { return true }
+func (g *GitDiffTool) IsDestructive() bool { return false }
+
+func (g *GitDiffTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"staged": {"type": "boolean", "description": "Show staged changes"}
+		}
+	}`)
+}
+
+func (g *GitDiffTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path   string `json:"path"`
+		Staged bool   `json:"staged"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	path := params.Path
+	if path == "" {
+		path = "."
+	}
+
+	args := []string{"-C", path, "diff"}
+	if params.Staged {
+		args = append(args, "--staged")
+	}
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Diff  string `json:"diff"`
+		Path  string `json:"path"`
+		Error string `json:"error,omitempty"`
+	}{
+		Diff: string(output),
+		Path: path,
+	}
+
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	return json.Marshal(result)
+}
+
+// GitLogTool Git log tool
+type GitLogTool struct{}
+
+func (g *GitLogTool) Name() string        { return "git_log" }
+func (g *GitLogTool) Description() string { return "Show recent git commit history" }
+func (g *GitLogTool) IsReadOnly() bool    { return true }
+func (g *GitLogTool) IsDestructive() bool { return false }
+
+func (g *GitLogTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"count": {"type": "number", "description": "Number of commits to show (default: 10)"}
+		}
+	}`)
+}
+
+func (g *GitLogTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path  string `json:"path"`
+		Count int    `json:"count"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	path := params.Path
+	if path == "" {
+		path = "."
+	}
+	count := params.Count
+	if count <= 0 {
+		count = 10
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "-C", path, "log", "--oneline", "-n", fmt.Sprintf("%d", count))
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Log   string `json:"log"`
+		Path  string `json:"path"`
+		Count int    `json:"count"`
+		Error string `json:"error,omitempty"`
+	}{
+		Log:   string(output),
+		Path:  path,
+		Count: count,
+	}
+
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry creates a registry with the default tools
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -918,6 +1031,8 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&DirWriteTool{})
 	registry.Register(&FileMoveTool{})
 	registry.Register(&GitStatusTool{})
+	registry.Register(&GitDiffTool{})
+	registry.Register(&GitLogTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})

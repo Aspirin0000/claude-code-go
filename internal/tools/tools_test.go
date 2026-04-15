@@ -298,3 +298,57 @@ func TestGitStatusTool(t *testing.T) {
 		t.Log("warning: branch not detected (may not be a git repo in test environment)")
 	}
 }
+
+func TestGitDiffTool(t *testing.T) {
+	tool := &GitDiffTool{}
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":   ".",
+		"staged": false,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Diff string `json:"diff"`
+		Path string `json:"path"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if parsed.Path != "." {
+		t.Errorf("expected path '.', got %s", parsed.Path)
+	}
+}
+
+func TestGitLogTool(t *testing.T) {
+	tool := &GitLogTool{}
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":  ".",
+		"count": 5,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Log   string `json:"log"`
+		Path  string `json:"path"`
+		Count int    `json:"count"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if parsed.Path != "." {
+		t.Errorf("expected path '.', got %s", parsed.Path)
+	}
+	if parsed.Count != 5 {
+		t.Errorf("expected count 5, got %d", parsed.Count)
+	}
+}

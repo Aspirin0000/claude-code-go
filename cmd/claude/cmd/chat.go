@@ -350,6 +350,8 @@ type App struct {
 	apiClient    *api.Client
 	toolRegistry *tools.Registry
 	input        string
+	inputHistory []string
+	historyIndex int
 	loading      bool
 	width        int
 	height       int
@@ -433,6 +435,21 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case tea.KeyRunes:
 			a.input += string(msg.Runes)
+			a.historyIndex = len(a.inputHistory)
+		case tea.KeyUp:
+			if a.historyIndex > 0 {
+				a.historyIndex--
+				a.input = a.inputHistory[a.historyIndex]
+			}
+		case tea.KeyDown:
+			if a.historyIndex < len(a.inputHistory) {
+				a.historyIndex++
+				if a.historyIndex < len(a.inputHistory) {
+					a.input = a.inputHistory[a.historyIndex]
+				} else {
+					a.input = ""
+				}
+			}
 		}
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
@@ -511,6 +528,8 @@ func (a *App) handleInput() (tea.Model, tea.Cmd) {
 		Type:    "user",
 		Content: a.input,
 	})
+	a.inputHistory = append(a.inputHistory, a.input)
+	a.historyIndex = len(a.inputHistory)
 	a.loading = true
 	a.input = ""
 	return a, a.processMessage()
