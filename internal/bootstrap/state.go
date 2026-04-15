@@ -200,14 +200,17 @@ var (
 	// Mutex for thread-safe operations
 	stateMu sync.RWMutex
 
+	// Mutex for initialization to avoid reentrant deadlock
+	initMu sync.Mutex
+
 	// Session switch signal callbacks
 	sessionSwitchCallbacks []func(SessionId)
 )
 
 // InitState initializes the global state
 func InitState() {
-	stateMu.Lock()
-	defer stateMu.Unlock()
+	initMu.Lock()
+	defer initMu.Unlock()
 
 	if state != nil {
 		return // Already initialized
@@ -669,7 +672,12 @@ func SnapshotOutputTokensForTurn(budget *int) {
 		InitState()
 	}
 
-	state.OutputTokensAtTurnStart = GetTotalOutputTokens()
+	// Inline token calculation to avoid reentrant RLock deadlock
+	outputTokens := 0
+	for _, usage := range state.ModelUsage {
+		outputTokens += usage.OutputTokens
+	}
+	state.OutputTokensAtTurnStart = outputTokens
 	state.CurrentTurnTokenBudget = budget
 	state.BudgetContinuationCount = 0
 }
