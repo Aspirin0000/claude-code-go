@@ -484,8 +484,10 @@ All P0 items are now functional:
 60. ✅ Implemented `/skills` command to manage reusable prompt templates
 61. ✅ Added skills command tests (add, show, use, edit, remove, validation)
 62. ✅ Added root CLI tests (command name, persistent flags, regular flags, default port)
-63. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-64. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+63. ✅ Implemented `/reset` command to clear conversation history
+64. ✅ Added reset command tests (with messages, no messages, aliases)
+65. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+66. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
