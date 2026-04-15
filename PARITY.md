@@ -477,8 +477,9 @@ All P0 items are now functional:
 53. ✅ Added unit tests for tools command (default, core/search/task/web/mcp filters)
 54. ✅ Added unit tests for MCP commands (overview, list, status, add, remove)
 55. ✅ Added unit tests for compact command (args, no messages, heuristic summary, extract functions)
-56. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-57. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+56. ✅ Added unit tests for exit command (metadata, aliases, category)
+57. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+58. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
