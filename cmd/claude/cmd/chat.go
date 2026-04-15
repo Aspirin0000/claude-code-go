@@ -539,25 +539,50 @@ type JSONResponse struct {
 func runJSONMode() error {
 	app := NewApp()
 	if app.apiClient == nil {
-		return outputJSON(JSONResponse{Success: false, Error: "AI client not initialized; please configure API key"})
+		return outputJSON(os.Stdout, JSONResponse{Success: false, Error: "AI client not initialized; please configure API key"})
+	}
+	return runJSONModeWithApp(app, os.Stdin, os.Stdout)
+}
+
+func runJSONModeWithApp(app *App, stdin io.Reader, stdout io.Writer) error {
+	if app.apiClient == nil {
+		return outputJSON(stdout, JSONResponse{Success: false, Error: "AI client not initialized; please configure API key"})
 	}
 
 	var req JSONRequest
-	stdinInfo, err := os.Stdin.Stat()
-	if err == nil && (stdinInfo.Mode()&os.ModeCharDevice) == 0 {
-		data, readErr := io.ReadAll(os.Stdin)
-		if readErr != nil {
-			return outputJSON(JSONResponse{Success: false, Error: readErr.Error()})
-		}
-		if err := json.Unmarshal(data, &req); err != nil {
-			return outputJSON(JSONResponse{Success: false, Error: "invalid JSON input: " + err.Error()})
+	if stdin != nil {
+		if f, ok := stdin.(*os.File); ok {
+			stdinInfo, err := f.Stat()
+			if err == nil && (stdinInfo.Mode()&os.ModeCharDevice) == 0 {
+				data, readErr := io.ReadAll(stdin)
+				if readErr != nil {
+					return outputJSON(stdout, JSONResponse{Success: false, Error: readErr.Error()})
+				}
+				if err := json.Unmarshal(data, &req); err != nil {
+					return outputJSON(stdout, JSONResponse{Success: false, Error: "invalid JSON input: " + err.Error()})
+				}
+			} else if promptFlag != "" {
+				req.Prompt = promptFlag
+			}
+		} else {
+			data, readErr := io.ReadAll(stdin)
+			if readErr != nil {
+				return outputJSON(stdout, JSONResponse{Success: false, Error: readErr.Error()})
+			}
+			if len(data) > 0 {
+				if err := json.Unmarshal(data, &req); err != nil {
+					return outputJSON(stdout, JSONResponse{Success: false, Error: "invalid JSON input: " + err.Error()})
+				}
+			} else if promptFlag != "" {
+				req.Prompt = promptFlag
+			}
 		}
 	} else if promptFlag != "" {
 		req.Prompt = promptFlag
 	}
 
 	if req.Prompt == "" {
-		return outputJSON(JSONResponse{Success: false, Error: "missing prompt in JSON input"})
+		return outputJSON(stdout, JSONResponse{Success: false, Error: "missing prompt in JSON input"})
 	}
 	if req.MaxRounds <= 0 {
 		req.MaxRounds = 10
@@ -591,7 +616,7 @@ func runJSONMode() error {
 		apiMessages := buildAPIMessagesFromState()
 		resp, err := app.apiClient.ChatWithBlocks(ctx, apiMessages, toolsList)
 		if err != nil {
-			return outputJSON(JSONResponse{Success: false, Error: err.Error(), ToolCalls: toolCalls})
+			return outputJSON(stdout, JSONResponse{Success: false, Error: err.Error(), ToolCalls: toolCalls})
 		}
 
 		var textParts []string
@@ -670,7 +695,7 @@ func runJSONMode() error {
 		})
 	}
 
-	return outputJSON(JSONResponse{
+	return outputJSON(stdout, JSONResponse{
 		Success:   true,
 		Response:  finalResponse,
 		Messages:  jsonMessages,
@@ -678,8 +703,8 @@ func runJSONMode() error {
 	})
 }
 
-func outputJSON(resp JSONResponse) error {
-	enc := json.NewEncoder(os.Stdout)
+func outputJSON(w io.Writer, resp JSONResponse) error {
+	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	return enc.Encode(resp)
 }

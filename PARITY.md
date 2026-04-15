@@ -488,8 +488,10 @@ All P0 items are now functional:
 64. ✅ Added reset command tests (with messages, no messages, aliases)
 65. ✅ Added HTTP server integration tests for `/chat` (simple response, tool use, API error, system prompt)
 66. ✅ Added `api.Client.SetBaseURL()` to enable mock API server testing
-67. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-68. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+67. ✅ Refactored `runJSONMode` into `runJSONModeWithApp` for testability
+68. ✅ Added JSON mode integration tests (simple response, tool use, invalid JSON, missing prompt)
+69. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+70. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
