@@ -872,3 +872,124 @@ func (g *GitShowTool) Call(ctx context.Context, input json.RawMessage) (json.Raw
 	}
 	return json.Marshal(result)
 }
+
+// GitRevertTool Git revert tool
+type GitRevertTool struct{}
+
+func (g *GitRevertTool) Name() string        { return "git_revert" }
+func (g *GitRevertTool) Description() string { return "Revert a commit by creating a new commit" }
+func (g *GitRevertTool) IsReadOnly() bool    { return false }
+func (g *GitRevertTool) IsDestructive() bool { return false }
+
+func (g *GitRevertTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"commit": {"type": "string", "description": "Commit hash to revert"},
+			"no_edit": {"type": "boolean", "description": "Do not open an editor for the revert message"}
+		},
+		"required": ["commit"]
+	}`)
+}
+
+func (g *GitRevertTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path   string `json:"path"`
+		Commit string `json:"commit"`
+		NoEdit bool   `json:"no_edit"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	repoPath := params.Path
+	if repoPath == "" {
+		repoPath = "."
+	}
+
+	args := []string{"-C", repoPath, "revert"}
+	if params.NoEdit {
+		args = append(args, "--no-edit")
+	}
+	args = append(args, params.Commit)
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Path    string `json:"path"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+		Path:    repoPath,
+	}
+	if err != nil {
+		result.Error = err.Error()
+	}
+	return json.Marshal(result)
+}
+
+// GitCloneTool Git clone tool
+type GitCloneTool struct{}
+
+func (g *GitCloneTool) Name() string        { return "git_clone" }
+func (g *GitCloneTool) Description() string { return "Clone a git repository" }
+func (g *GitCloneTool) IsReadOnly() bool    { return false }
+func (g *GitCloneTool) IsDestructive() bool { return false }
+
+func (g *GitCloneTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"url": {"type": "string", "description": "Repository URL"},
+			"destination": {"type": "string", "description": "Local directory to clone into"},
+			"branch": {"type": "string", "description": "Branch to checkout after cloning"},
+			"depth": {"type": "number", "description": "Create a shallow clone with given depth"}
+		},
+		"required": ["url"]
+	}`)
+}
+
+func (g *GitCloneTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		URL         string `json:"url"`
+		Destination string `json:"destination"`
+		Branch      string `json:"branch"`
+		Depth       int    `json:"depth"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	args := []string{"clone"}
+	if params.Depth > 0 {
+		args = append(args, "--depth", fmt.Sprintf("%d", params.Depth))
+	}
+	if params.Branch != "" {
+		args = append(args, "--branch", params.Branch)
+	}
+	args = append(args, params.URL)
+	if params.Destination != "" {
+		args = append(args, params.Destination)
+	}
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+	}
+	if err != nil {
+		result.Error = err.Error()
+	}
+	return json.Marshal(result)
+}

@@ -307,6 +307,49 @@ func TestHttpRequestToolGet(t *testing.T) {
 	}
 }
 
+func TestFileInfoTool(t *testing.T) {
+	tool := &FileInfoTool{}
+	tmpDir := t.TempDir()
+	testFile := filepath.Join(tmpDir, "info.txt")
+	os.WriteFile(testFile, []byte("hello world"), 0644)
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path": testFile,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Path    string `json:"path"`
+		Size    int64  `json:"size"`
+		IsDir   bool   `json:"is_dir"`
+		Mode    string `json:"mode"`
+		ModTime string `json:"mod_time"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if parsed.Path != testFile {
+		t.Errorf("expected path %s, got %s", testFile, parsed.Path)
+	}
+	if parsed.Size != 11 {
+		t.Errorf("expected size 11, got %d", parsed.Size)
+	}
+	if parsed.IsDir {
+		t.Errorf("expected is_dir false")
+	}
+	if parsed.Mode == "" {
+		t.Errorf("expected non-empty mode")
+	}
+	if parsed.ModTime == "" {
+		t.Errorf("expected non-empty mod_time")
+	}
+}
+
 func TestHttpRequestToolPost(t *testing.T) {
 	tool := &HttpRequestTool{}
 	input, _ := json.Marshal(map[string]interface{}{
