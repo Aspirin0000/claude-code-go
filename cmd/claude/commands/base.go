@@ -1,6 +1,6 @@
-// Package commands 提供所有 CLI 命令实现
-// 来源: src/commands/ (207个 TS 文件)
-// 重构: Go 命令系统 - 批量生产模式
+// Package commands provides all CLI command implementations.
+// Source: src/commands/ (207 TS files)
+// Refactor: Go command system in batch mode.
 package commands
 
 import (
@@ -8,67 +8,67 @@ import (
 	"fmt"
 )
 
-// Command 命令接口
-// 对应 TS: Command 类型定义
+// Command interface.
+// Maps to TS: Command type definition.
 type Command interface {
-	// Name 命令名称 (如 "help", "bash")
+	// Name command name (e.g. "help", "bash")
 	Name() string
 
-	// Aliases 命令别名
+	// Aliases command aliases
 	Aliases() []string
 
-	// Description 命令描述
+	// Description command description
 	Description() string
 
-	// Category 命令分类
+	// Category command category
 	Category() CommandCategory
 
-	// Execute 执行命令
+	// Execute runs the command
 	Execute(ctx context.Context, args []string) error
 
-	// Help 获取帮助文本
+	// Help returns help text
 	Help() string
 }
 
-// CommandCategory 命令分类
+// CommandCategory command category.
 type CommandCategory string
 
 const (
-	CategoryGeneral  CommandCategory = "general"  // 通用命令
-	CategorySession  CommandCategory = "session"  // 会话管理
-	CategoryConfig   CommandCategory = "config"   // 配置管理
-	CategoryMCP      CommandCategory = "mcp"      // MCP管理
-	CategoryTools    CommandCategory = "tools"    // 工具命令
-	CategoryFiles    CommandCategory = "files"    // 文件操作
-	CategoryAdvanced CommandCategory = "advanced" // 高级功能
-	CategoryPlugins  CommandCategory = "plugins"  // 插件管理
+	CategoryGeneral  CommandCategory = "general"  // General commands
+	CategorySession  CommandCategory = "session"  // Session management
+	CategoryConfig   CommandCategory = "config"   // Configuration
+	CategoryMCP      CommandCategory = "mcp"      // MCP management
+	CategoryTools    CommandCategory = "tools"    // Tool commands
+	CategoryFiles    CommandCategory = "files"    // File operations
+	CategoryAdvanced CommandCategory = "advanced" // Advanced features
+	CategoryPlugins  CommandCategory = "plugins"  // Plugin management
 )
 
-// String 返回分类显示名称
+// String returns the display name for the category.
 func (c CommandCategory) String() string {
 	switch c {
 	case CategoryGeneral:
-		return "通用命令"
+		return "General"
 	case CategorySession:
-		return "会话管理"
+		return "Session"
 	case CategoryConfig:
-		return "配置管理"
+		return "Config"
 	case CategoryMCP:
-		return "MCP管理"
+		return "MCP"
 	case CategoryTools:
-		return "工具命令"
+		return "Tools"
 	case CategoryFiles:
-		return "文件操作"
+		return "Files"
 	case CategoryAdvanced:
-		return "高级功能"
+		return "Advanced"
 	case CategoryPlugins:
-		return "插件管理"
+		return "Plugins"
 	default:
 		return string(c)
 	}
 }
 
-// BaseCommand 基础命令实现
+// BaseCommand base command implementation.
 type BaseCommand struct {
 	name        string
 	aliases     []string
@@ -77,49 +77,49 @@ type BaseCommand struct {
 	helpText    string
 }
 
-// Name 返回命令名称
+// Name returns the command name.
 func (c *BaseCommand) Name() string {
 	return c.name
 }
 
-// Aliases 返回命令别名
+// Aliases returns command aliases.
 func (c *BaseCommand) Aliases() []string {
 	return c.aliases
 }
 
-// Description 返回命令描述
+// Description returns the command description.
 func (c *BaseCommand) Description() string {
 	return c.description
 }
 
-// Category 返回命令分类
+// Category returns the command category.
 func (c *BaseCommand) Category() CommandCategory {
 	return c.category
 }
 
-// Help 返回帮助文本
+// Help returns the help text.
 func (c *BaseCommand) Help() string {
 	return c.helpText
 }
 
-// NewBaseCommand 创建基础命令
+// NewBaseCommand creates a base command.
 func NewBaseCommand(name, description string, category CommandCategory) *BaseCommand {
 	return &BaseCommand{
 		name:        name,
 		description: description,
 		category:    category,
-		helpText: fmt.Sprintf("/%s - %s\n\n使用: /%s [参数]",
+		helpText: fmt.Sprintf("/%s - %s\n\nUsage: /%s [args]",
 			name, description, name),
 	}
 }
 
-// WithAliases 设置别名
+// WithAliases sets aliases.
 func (c *BaseCommand) WithAliases(aliases ...string) *BaseCommand {
 	c.aliases = aliases
 	return c
 }
 
-// WithHelp 设置帮助文本
+// WithHelp sets help text.
 func (c *BaseCommand) WithHelp(help string) *BaseCommand {
 	c.helpText = help
 	return c

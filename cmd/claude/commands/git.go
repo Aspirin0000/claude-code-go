@@ -25,12 +25,12 @@ const (
 	ColorBold    = "\033[1m"
 )
 
-// GitCommand Git 命令实现
+// GitCommand implements Git commands
 type GitCommand struct {
 	BaseCommand
 }
 
-// NewGitCommand 创建新的 Git 命令
+// NewGitCommand creates a new Git command
 func NewGitCommand() *GitCommand {
 	cmd := &GitCommand{
 		BaseCommand: BaseCommand{
@@ -84,9 +84,9 @@ func NewGitCommand() *GitCommand {
 	return cmd
 }
 
-// Execute 执行 Git 命令
+// Execute executes the Git command
 func (g *GitCommand) Execute(ctx context.Context, args []string) error {
-	// 检查是否在 git 仓库中
+	// Check if we are in a git repository
 	if !g.IsGitRepo() {
 		return fmt.Errorf("not a git repository")
 	}
@@ -127,7 +127,7 @@ func (g *GitCommand) Execute(ctx context.Context, args []string) error {
 	}
 }
 
-// IsGitRepo 检查当前目录是否是 Git 仓库
+// IsGitRepo checks if the current directory is a Git repository
 func (g *GitCommand) IsGitRepo() bool {
 	cmd := exec.Command("git", "rev-parse", "--git-dir")
 	cmd.Dir = g.getWorkDir()
@@ -135,7 +135,7 @@ func (g *GitCommand) IsGitRepo() bool {
 	return err == nil
 }
 
-// GetCurrentBranch 获取当前分支名
+// GetCurrentBranch gets the current branch name
 func (g *GitCommand) GetCurrentBranch() string {
 	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	cmd.Dir = g.getWorkDir()
@@ -146,7 +146,7 @@ func (g *GitCommand) GetCurrentBranch() string {
 	return strings.TrimSpace(string(output))
 }
 
-// GetLastCommit 获取最近提交信息
+// GetLastCommit gets the most recent commit info
 func (g *GitCommand) GetLastCommit() string {
 	cmd := exec.Command("git", "log", "-1", "--format=%h %s")
 	cmd.Dir = g.getWorkDir()
@@ -157,14 +157,14 @@ func (g *GitCommand) GetLastCommit() string {
 	return strings.TrimSpace(string(output))
 }
 
-// GetRepoStatus 获取仓库状态摘要
+// GetRepoStatus gets the repository status summary
 func (g *GitCommand) GetRepoStatus() string {
 	branch := g.GetCurrentBranch()
 	commit := g.GetLastCommit()
 	return fmt.Sprintf("%s[%s]%s %s@%s", ColorCyan, branch, ColorReset, ColorYellow, commit)
 }
 
-// status 显示 git status
+// status shows git status
 func (g *GitCommand) status() error {
 	fmt.Printf("%sGit Status%s - %s\n\n", ColorBold, ColorReset, g.GetRepoStatus())
 
@@ -187,7 +187,7 @@ func (g *GitCommand) status() error {
 	return nil
 }
 
-// colorizeStatusLine 为状态输出行添加颜色
+// colorizeStatusLine adds color to a status output line
 func (g *GitCommand) colorizeStatusLine(line string) {
 	if strings.HasPrefix(line, "##") {
 		// Branch info
@@ -209,7 +209,7 @@ func (g *GitCommand) colorizeStatusLine(line string) {
 	}
 }
 
-// log 显示提交日志
+// log shows commit log
 func (g *GitCommand) log(args []string) error {
 	count := 10
 	if len(args) > 0 {
@@ -233,7 +233,7 @@ func (g *GitCommand) log(args []string) error {
 	return nil
 }
 
-// diff 显示差异
+// diff shows differences
 func (g *GitCommand) diff(args []string) error {
 	fmt.Printf("%sGit Diff%s - %s\n\n", ColorBold, ColorReset, g.GetRepoStatus())
 
@@ -259,7 +259,7 @@ func (g *GitCommand) diff(args []string) error {
 	return nil
 }
 
-// branch 分支操作
+// branch handles branch operations
 func (g *GitCommand) branch(args []string) error {
 	if len(args) == 0 {
 		// List branches
@@ -282,7 +282,7 @@ func (g *GitCommand) branch(args []string) error {
 	return nil
 }
 
-// add 添加文件到暂存区
+// add stages files
 func (g *GitCommand) add(args []string) error {
 	if len(args) == 0 {
 		// Interactive mode - show status and ask
@@ -326,7 +326,7 @@ func (g *GitCommand) add(args []string) error {
 	return g.runGitCommand("add", args...)
 }
 
-// commit 提交更改
+// commit commits changes
 func (g *GitCommand) commit(args []string) error {
 	if len(args) == 0 {
 		// Check if there are staged changes
@@ -366,7 +366,7 @@ func (g *GitCommand) commit(args []string) error {
 	return g.runGitCommand("commit", "-m", message)
 }
 
-// push 推送到远程
+// push pushes to remote
 func (g *GitCommand) push(args []string) error {
 	// Check if there are commits to push
 	cmd := exec.Command("git", "log", "@{u}..HEAD", "--oneline")
@@ -388,7 +388,7 @@ func (g *GitCommand) push(args []string) error {
 	return g.runGitCommand("push", args...)
 }
 
-// pull 从远程拉取
+// pull pulls from remote
 func (g *GitCommand) pull(args []string) error {
 	// Warning about potential conflicts
 	fmt.Printf("%sWarning:%s This will pull changes from remote and may cause merge conflicts\n", ColorYellow, ColorReset)
@@ -402,7 +402,7 @@ func (g *GitCommand) pull(args []string) error {
 	return g.runGitCommand("pull", args...)
 }
 
-// stash 暂存更改
+// stash stashes changes
 func (g *GitCommand) stash(args []string) error {
 	if len(args) == 0 {
 		// Default stash operation
@@ -463,7 +463,7 @@ func (g *GitCommand) stash(args []string) error {
 	}
 }
 
-// confirm 请求用户确认
+// confirm asks the user for confirmation
 func (g *GitCommand) confirm(message string) bool {
 	fmt.Printf("%s [y/N]: ", message)
 	reader := bufio.NewReader(os.Stdin)
@@ -472,7 +472,7 @@ func (g *GitCommand) confirm(message string) bool {
 	return response == "y" || response == "yes"
 }
 
-// runGitCommand 运行 git 命令并显示输出
+// runGitCommand runs a git command and displays output
 func (g *GitCommand) runGitCommand(subcommand string, args ...string) error {
 	cmdArgs := append([]string{subcommand}, args...)
 	cmd := exec.Command("git", cmdArgs...)
@@ -483,7 +483,7 @@ func (g *GitCommand) runGitCommand(subcommand string, args ...string) error {
 	return cmd.Run()
 }
 
-// getWorkDir 获取工作目录
+// getWorkDir gets the working directory
 func (g *GitCommand) getWorkDir() string {
 	if dir, err := os.Getwd(); err == nil {
 		return dir
@@ -491,13 +491,13 @@ func (g *GitCommand) getWorkDir() string {
 	return "."
 }
 
-// showHelp 显示帮助信息
+// showHelp shows help information
 func (g *GitCommand) showHelp() error {
 	fmt.Println(g.helpText)
 	return nil
 }
 
-// GetInfo 获取 Git 命令信息
+// GetInfo gets Git command information
 func (g *GitCommand) GetInfo() map[string]interface{} {
 	return map[string]interface{}{
 		"name":        g.name,
@@ -507,7 +507,7 @@ func (g *GitCommand) GetInfo() map[string]interface{} {
 	}
 }
 
-// QuickStatus 快速状态检查（用于提示）
+// QuickStatus performs a quick status check (for prompts)
 func (g *GitCommand) QuickStatus() string {
 	if !g.IsGitRepo() {
 		return ""
@@ -545,7 +545,7 @@ func (g *GitCommand) QuickStatus() string {
 	return fmt.Sprintf("%s[%s]%s%s", ColorCyan, branch, ColorReset, status)
 }
 
-// AutoCommit 自动提交（便捷功能）
+// AutoCommit automatically commits (convenience feature)
 func (g *GitCommand) AutoCommit(message string) error {
 	if !g.IsGitRepo() {
 		return fmt.Errorf("not a git repository")
@@ -589,7 +589,7 @@ func (g *GitCommand) AutoCommit(message string) error {
 	return nil
 }
 
-// FindGitRoot 查找 Git 仓库根目录
+// FindGitRoot finds the Git repository root directory
 func (g *GitCommand) FindGitRoot(startDir string) (string, error) {
 	dir := startDir
 	if dir == "" {
@@ -610,7 +610,7 @@ func (g *GitCommand) FindGitRoot(startDir string) (string, error) {
 	}
 }
 
-// GetRemoteInfo 获取远程仓库信息
+// GetRemoteInfo gets remote repository information
 func (g *GitCommand) GetRemoteInfo() (map[string]string, error) {
 	if !g.IsGitRepo() {
 		return nil, fmt.Errorf("not a git repository")

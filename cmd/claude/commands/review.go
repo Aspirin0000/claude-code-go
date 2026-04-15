@@ -20,22 +20,22 @@ func NewReviewCommand() *ReviewCommand {
 	cmd := &ReviewCommand{
 		BaseCommand: NewBaseCommand(
 			"review",
-			"查看最近的更改或计划",
+			"Review recent changes or plan",
 			CategoryAdvanced,
 		),
 	}
-	cmd.WithHelp(`使用: /review
+	cmd.WithHelp(`Usage: /review
 
-查看最近的更改、执行计划或会话摘要。
+Review recent changes, execution plan, or session summary.
 
-子命令:
-  /review             显示综合审查报告
-  /review changes     查看最近的代码更改
-  /review plan        查看当前执行计划
-  /review git         查看最近的Git提交
-  /review summary     查看会话摘要
+Subcommands:
+  /review             Show comprehensive review report
+  /review changes     View recent code changes
+  /review plan        View current execution plan
+  /review git         View recent Git commits
+  /review summary     View session summary
 
-示例:
+Examples:
   /review
   /review changes
   /review git 5`)
@@ -74,33 +74,33 @@ func (r *ReviewCommand) Execute(ctx context.Context, args []string) error {
 func (r *ReviewCommand) showComprehensiveReview() error {
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║              📊 审查报告 (Review Report)                  ║")
+	fmt.Println("║              📊 Review Report                  ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
 	// Git status
 	if r.isGitRepo() {
-		fmt.Println("🔀 Git 状态")
+		fmt.Println("🔀 Git Status")
 		fmt.Println("  " + strings.Repeat("─", 50))
 		r.showGitStatus()
 		fmt.Println()
 	}
 
 	// Current plan
-	fmt.Println("📋 执行计划")
+	fmt.Println("📋 Execution Plan")
 	fmt.Println("  " + strings.Repeat("─", 50))
 	if err := r.showCurrentPlanBrief(); err != nil {
-		fmt.Println("  (无法加载计划)")
+		fmt.Println("  (Unable to load plan)")
 	}
 	fmt.Println()
 
 	// Recent changes summary
-	fmt.Println("📝 最近活动")
+	fmt.Println("📝 Recent Activity")
 	fmt.Println("  " + strings.Repeat("─", 50))
 	r.showRecentActivity()
 	fmt.Println()
 
-	fmt.Println("💡 提示: 使用 /review <子命令> 查看详细信息")
+	fmt.Println("💡 Tip: Use /review <subcommand> for more details")
 	fmt.Println("        /review changes, /review plan, /review git")
 	fmt.Println()
 
@@ -111,19 +111,19 @@ func (r *ReviewCommand) showComprehensiveReview() error {
 func (r *ReviewCommand) reviewChanges() error {
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║              📝 最近的更改 (Recent Changes)               ║")
+	fmt.Println("║              📝 Recent Changes               ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
 	// Check git status
 	if r.isGitRepo() {
-		fmt.Println("未提交的更改:")
+		fmt.Println("Uncommitted changes:")
 		cmd := exec.Command("git", "status", "-s")
 		output, err := cmd.Output()
 		if err != nil {
-			fmt.Println("  无法获取Git状态")
+			fmt.Println("  Unable to get Git status")
 		} else if len(output) == 0 {
-			fmt.Println("  ✅ 工作区干净，没有未提交的更改")
+			fmt.Println("  ✅ Working tree clean, no uncommitted changes")
 		} else {
 			lines := strings.Split(strings.TrimSpace(string(output)), "\n")
 			for _, line := range lines {
@@ -135,7 +135,7 @@ func (r *ReviewCommand) reviewChanges() error {
 		fmt.Println()
 
 		// Show recent commits
-		fmt.Println("最近的提交:")
+		fmt.Println("Recent commits:")
 		logCmd := exec.Command("git", "log", "--oneline", "-5", "--color=never")
 		logOutput, err := logCmd.Output()
 		if err == nil && len(logOutput) > 0 {
@@ -148,7 +148,7 @@ func (r *ReviewCommand) reviewChanges() error {
 	}
 
 	// Show recently modified files
-	fmt.Println("最近修改的文件:")
+	fmt.Println("Recently modified files:")
 	r.showRecentFiles()
 	fmt.Println()
 
@@ -159,7 +159,7 @@ func (r *ReviewCommand) reviewChanges() error {
 func (r *ReviewCommand) reviewPlan() error {
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║              📋 计划审查 (Plan Review)                    ║")
+	fmt.Println("║              📋 Plan Review                    ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
@@ -170,20 +170,20 @@ func (r *ReviewCommand) reviewPlan() error {
 // reviewGitCommits reviews recent git commits
 func (r *ReviewCommand) reviewGitCommits(count int) error {
 	if !r.isGitRepo() {
-		fmt.Println("❌ 当前目录不是Git仓库")
+		fmt.Println("❌ Current directory is not a Git repository")
 		return nil
 	}
 
 	fmt.Println()
 	fmt.Printf("╔══════════════════════════════════════════════════════════╗\n")
-	fmt.Printf("║         🔀 最近的 %d 次提交 (Recent Commits)              ║\n", count)
+	fmt.Printf("║         🔀 Recent %d Commits              ║\n", count)
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
 	// Get current branch
 	branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	branch, _ := branchCmd.Output()
-	fmt.Printf("分支: %s\n\n", strings.TrimSpace(string(branch)))
+	fmt.Printf("Branch: %s\n\n", strings.TrimSpace(string(branch)))
 
 	// Get commits with details
 	logCmd := exec.Command("git", "log",
@@ -192,7 +192,7 @@ func (r *ReviewCommand) reviewGitCommits(count int) error {
 		"--color=never")
 	output, err := logCmd.Output()
 	if err != nil {
-		return fmt.Errorf("无法获取提交历史: %w", err)
+		return fmt.Errorf("unable to get commit history: %w", err)
 	}
 
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
@@ -200,7 +200,7 @@ func (r *ReviewCommand) reviewGitCommits(count int) error {
 		parts := strings.SplitN(line, "|", 4)
 		if len(parts) == 4 {
 			fmt.Printf("%d. %s %s\n", i+1, parts[0], parts[3])
-			fmt.Printf("   作者: %s | %s\n", parts[1], parts[2])
+			fmt.Printf("   Author: %s | %s\n", parts[1], parts[2])
 			fmt.Println()
 		}
 	}
@@ -209,7 +209,7 @@ func (r *ReviewCommand) reviewGitCommits(count int) error {
 	statCmd := exec.Command("git", "diff", "HEAD~1", "--stat")
 	statOutput, _ := statCmd.Output()
 	if len(statOutput) > 0 {
-		fmt.Println("最近提交的统计:")
+		fmt.Println("Recent commit stats:")
 		fmt.Println(string(statOutput))
 	}
 
@@ -220,42 +220,42 @@ func (r *ReviewCommand) reviewGitCommits(count int) error {
 func (r *ReviewCommand) reviewSessionSummary() error {
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║           📊 会话摘要 (Session Summary)                   ║")
+	fmt.Println("║           📊 Session Summary                   ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
 	// Session duration
-	fmt.Println("⏱️  会话信息")
+	fmt.Println("⏱️  Session Info")
 	fmt.Println("  " + strings.Repeat("─", 50))
-	fmt.Printf("  启动时间: %s\n", time.Now().Format("2006-01-02 15:04:05"))
+	fmt.Printf("  Start time: %s\n", time.Now().Format("2006-01-02 15:04:05"))
 	fmt.Println()
 
 	// Working directory
 	cwd, _ := os.Getwd()
-	fmt.Println("📁 工作目录")
+	fmt.Println("📁 Working Directory")
 	fmt.Println("  " + strings.Repeat("─", 50))
 	fmt.Printf("  %s\n", cwd)
 	fmt.Println()
 
 	// Git info
 	if r.isGitRepo() {
-		fmt.Println("🔀 Git 信息")
+		fmt.Println("🔀 Git Info")
 		fmt.Println("  " + strings.Repeat("─", 50))
 
 		branchCmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 		branch, _ := branchCmd.Output()
-		fmt.Printf("  分支: %s\n", strings.TrimSpace(string(branch)))
+		fmt.Printf("  Branch: %s\n", strings.TrimSpace(string(branch)))
 
 		// Count commits today
 		today := time.Now().Format("2006-01-02")
 		countCmd := exec.Command("git", "rev-list", "--count", "--since", today+" 00:00:00", "HEAD")
 		count, _ := countCmd.Output()
-		fmt.Printf("  今日提交: %s\n", strings.TrimSpace(string(count)))
+		fmt.Printf("  Commits today: %s\n", strings.TrimSpace(string(count)))
 		fmt.Println()
 	}
 
 	// File statistics
-	fmt.Println("📊 文件统计")
+	fmt.Println("📊 File Statistics")
 	fmt.Println("  " + strings.Repeat("─", 50))
 	r.showFileStats()
 	fmt.Println()
@@ -275,12 +275,12 @@ func (r *ReviewCommand) showGitStatus() {
 	cmd := exec.Command("git", "status", "-s")
 	output, err := cmd.Output()
 	if err != nil {
-		fmt.Println("  无法获取状态")
+		fmt.Println("  Unable to get status")
 		return
 	}
 
 	if len(output) == 0 {
-		fmt.Println("  ✅ 工作区干净")
+		fmt.Println("  ✅ Working tree clean")
 		return
 	}
 
@@ -311,16 +311,16 @@ func (r *ReviewCommand) showGitStatus() {
 	}
 
 	if modified > 0 {
-		fmt.Printf("  📝 修改: %d\n", modified)
+		fmt.Printf("  📝 Modified: %d\n", modified)
 	}
 	if added > 0 {
-		fmt.Printf("  ➕ 新增: %d\n", added)
+		fmt.Printf("  ➕ Added: %d\n", added)
 	}
 	if deleted > 0 {
-		fmt.Printf("  ➖ 删除: %d\n", deleted)
+		fmt.Printf("  ➖ Deleted: %d\n", deleted)
 	}
 	if untracked > 0 {
-		fmt.Printf("  ❓ 未跟踪: %d\n", untracked)
+		fmt.Printf("  ❓ Untracked: %d\n", untracked)
 	}
 }
 
@@ -329,13 +329,13 @@ func (r *ReviewCommand) showCurrentPlanBrief() error {
 
 	data, err := os.ReadFile(planPath)
 	if err != nil || len(data) == 0 {
-		fmt.Println("  📋 没有活动计划")
+		fmt.Println("  📋 No active plan")
 		return nil
 	}
 
 	// Simple parsing to check if plan exists
 	if strings.Contains(string(data), `"id"`) {
-		fmt.Println("  📋 有活动计划")
+		fmt.Println("  📋 Active plan exists")
 
 		// Extract description if available
 		if idx := strings.Index(string(data), `"description"`); idx != -1 {
@@ -349,7 +349,7 @@ func (r *ReviewCommand) showCurrentPlanBrief() error {
 			}
 		}
 	} else {
-		fmt.Println("  📋 没有活动计划")
+		fmt.Println("  📋 No active plan")
 	}
 
 	return nil
@@ -378,7 +378,7 @@ func (r *ReviewCommand) showRecentFiles() {
 	})
 
 	if len(files) == 0 {
-		fmt.Println("  (过去24小时没有修改的文件)")
+		fmt.Println("  (No files modified in the past 24 hours)")
 		return
 	}
 
@@ -393,27 +393,27 @@ func (r *ReviewCommand) showRecentFiles() {
 	}
 
 	if len(files) > limit {
-		fmt.Printf("  ... 还有 %d 个文件\n", len(files)-limit)
+		fmt.Printf("  ... and %d more files\n", len(files)-limit)
 	}
 }
 
 func (r *ReviewCommand) showRecentActivity() {
 	// Show some activity statistics
-	fmt.Println("  • 当前目录: " + getCurrentDir())
+	fmt.Println("  • Current directory: " + getCurrentDir())
 
 	if r.isGitRepo() {
 		cmd := exec.Command("git", "rev-list", "--count", "--since", "24.hours.ago", "HEAD")
 		output, _ := cmd.Output()
 		count := strings.TrimSpace(string(output))
 		if count != "0" && count != "" {
-			fmt.Printf("  • 过去24小时有 %s 次提交\n", count)
+			fmt.Printf("  • %s commits in the past 24 hours\n", count)
 		}
 	}
 
 	// Check for plan
 	planPath := filepath.Join(getHomeDir(), ".claude-code", "plan.json")
 	if _, err := os.Stat(planPath); err == nil {
-		fmt.Println("  • 有活动的执行计划")
+		fmt.Println("  • Active execution plan")
 	}
 }
 
@@ -436,16 +436,16 @@ func (r *ReviewCommand) showFileStats() {
 		totalFiles++
 		ext := filepath.Ext(info.Name())
 		if ext == "" {
-			ext = "(无扩展名)"
+			ext = "(no extension)"
 		}
 		extCounts[ext]++
 		return nil
 	})
 
-	fmt.Printf("  总文件数: %d\n", totalFiles)
+	fmt.Printf("  Total files: %d\n", totalFiles)
 
 	if len(extCounts) > 0 {
-		fmt.Println("  按类型:")
+		fmt.Println("  By type:")
 		// Show top 5 extensions
 		type extCount struct {
 			ext   string

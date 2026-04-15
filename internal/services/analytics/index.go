@@ -5,6 +5,7 @@ package analytics
 
 import (
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -222,11 +223,11 @@ func formatValue(v interface{}) string {
 	case string:
 		return val
 	case int:
-		return string(rune(val))
+		return strconv.Itoa(val)
 	case int64:
-		return string(rune(val))
+		return strconv.FormatInt(val, 10)
 	case float64:
-		return string(rune(int(val)))
+		return strconv.FormatFloat(val, 'f', -1, 64)
 	case bool:
 		if val {
 			return "true"

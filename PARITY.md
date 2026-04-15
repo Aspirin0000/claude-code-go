@@ -5,10 +5,10 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **28 slash commands** fully implemented and tested
-- **14 AI tools** complete with full functionality (~25% of 55)
+- **31 slash commands** fully implemented and tested
+- **17 AI tools** complete with full functionality (~31% of 55)
 - **MCP Client** 95% complete with all major features
-- **API Client** fully functional with streaming support
+- **API Client** fully functional with streaming and block-based tool support
 - **CLI System** working with REPL and TUI modes
 
 **Key Achievements:**
@@ -36,7 +36,7 @@ Evidence: `internal/tools/` (6 files, ~1,800 lines)
 - ✅ **notebook_edit.go** (240 lines) - Complete NotebookEditTool with CRUD operations
 - ✅ **task.go** (400 lines) - Complete Task Tools with persistent JSON storage
   - task_get, task_create, task_update, task_stop, task_list
-- ⚠️ **agent.go** - AgentTool skeleton (needs async task system)
+- ✅ **agent.go** - Real AgentTool with API client integration via context
 - ✅ **registry.go** - Tool registry with schema support
 
 **Completed Tools (14/55 - 25%):**
@@ -64,14 +64,26 @@ Evidence: `internal/tools/` (6 files, ~1,800 lines)
 - ✅ Complete help system in English
 - ✅ Format string errors fixed in git.go and permissions.go
 - ✅ Unit tests for command system
+- ✅ Dynamic MCP tool exposure - AI sees connected MCP server tools
+- ✅ Multi-step tool calling loop in REPL and TUI (max 10 rounds)
+- ✅ Real AgentTool with API client context passing
+- ✅ Full English localization of core tools, commands, and UI
+- ✅ Chat message conversion tests with `Blocks` support
+- ✅ Memory command with persistent JSON storage and tests
+- ✅ Reload command to re-read config from disk
+- ✅ History command for conversation summary with tool usage stats
+- ✅ /tools command shows connected MCP tools
+- ✅ /todos and /todo aliases for task management
+- ✅ Doctor command checks Anthropic API reachability
+- ✅ Updated model list with newer Claude models (e.g., `claude-sonnet-4-20250514`)
+- ✅ Fixed `tool_result` block serialization to use `content` field (Anthropic API compliance)
 
 **Pending Tools:**
 - ⚠️ WebSearchTool - Requires search engine API configuration
-- ⚠️ AgentTool - Skeleton implementation (needs async task system)
-- ❌ MCP tools - Not yet implemented
 - ❌ LSP tools - Not yet implemented
 
-**Status:** Core tools 14/55 complete (~25%)
+**Status:** Core tools 17/55 complete (~31%)
+- Added: AgentTool, ListMcpResourcesTool, ReadMcpResourceTool, McpTool
 
 ---
 
@@ -128,7 +140,7 @@ Evidence: `claude-code-main/src/commands/` (207 files)
 etc.
 
 ### Go Implementation
-Evidence: `cmd/claude/commands/` (28 files, ~5,000 lines)
+Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ **base.go** - Command interface and BaseCommand
 - ✅ **registry.go** - Thread-safe command registry
 - ✅ Unit tests in **base_test.go**
@@ -144,16 +156,18 @@ Evidence: `cmd/claude/commands/` (28 files, ~5,000 lines)
 - ✅ `/init` - Initialize configuration
 - ✅ `/doctor` - System diagnostics
 
-#### Session Management (4)
+#### Session Management (5)
 - ✅ `/compact` - Compress conversation history (with AI summarization)
 - ✅ `/resume` - Resume historical session
 - ✅ `/save` - Save session to file
 - ✅ `/load` - Load session from file
+- ✅ `/history` - Show conversation history summary
 
-#### Configuration Management (3)
+#### Configuration Management (4)
 - ✅ `/config` - Configuration management
 - ✅ `/model` - Switch AI model
 - ✅ `/permissions` - Permission level management
+- ✅ `/reload` - Reload configuration from disk
 
 #### MCP Management (4)
 - ✅ `/mcp` - MCP server management
@@ -167,7 +181,7 @@ Evidence: `cmd/claude/commands/` (28 files, ~5,000 lines)
 - ✅ `/grep` (/search) - File content search
 - ✅ `/glob` - File pattern matching
 
-#### Advanced Commands (6)
+#### Advanced Commands (7)
 - ✅ `/plan` - Create execution plans
 - ✅ `/review` - Review code changes
 - ✅ `/tasks` - Task management
@@ -176,7 +190,7 @@ Evidence: `cmd/claude/commands/` (28 files, ~5,000 lines)
 - ✅ `/cost` - Cost tracking
 - ✅ `/diff` - Git diff viewing
 
-**Status:** 28 commands implemented (focused on core functionality)
+**Status:** 31 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -347,14 +361,14 @@ All P0 items are now functional:
 ## Recent Achievements
 
 ### Latest Commits
-1. ✅ Fixed all command registration (added missing init() functions)
-2. ✅ Fixed format string errors in git.go and permissions.go
-3. ✅ Added /init command for easy setup
-4. ✅ Enhanced /doctor command with API key checking
-5. ✅ Added unit tests for command system
-6. ✅ Translated all user-facing text to English
-7. ✅ Created comprehensive Makefile with install targets
-8. ✅ Updated README with Quick Start guide
+1. ✅ Fixed `tool_result` block serialization bug (`content` vs `text` field)
+2. ✅ Added `Blocks` support to `api.Message` and `state.Message` for tool_use/tool_result
+3. ✅ Real MCP tool integration via `mcp.GetGlobalMCPManager()`
+4. ✅ Multi-step tool calling loop in REPL and TUI
+5. ✅ Real AgentTool with API client context passing
+6. ✅ Added `/memory`, `/reload`, and `/history` commands with tests
+7. ✅ Updated `/model` command with newer Claude model IDs
+8. ✅ Full English localization of tools, UI, and commands
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -363,4 +377,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-03*
+*Last Updated: 2026-04-15*

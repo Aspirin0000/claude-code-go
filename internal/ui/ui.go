@@ -1,4 +1,4 @@
-// Package ui 提供终端用户界面
+// Package ui provides terminal user interface helpers
 package ui
 
 import (
@@ -9,20 +9,20 @@ import (
 	"golang.org/x/term"
 )
 
-// TerminalUI 终端界面
+// TerminalUI terminal user interface
 type TerminalUI struct {
 	width  int
 	height int
 }
 
-// NewTerminalUI 创建新的终端 UI
+// NewTerminalUI creates a new terminal UI
 func NewTerminalUI() *TerminalUI {
 	ui := &TerminalUI{
 		width:  80,
 		height: 24,
 	}
 
-	// 获取实际终端尺寸
+	// Get actual terminal size
 	if width, height, err := term.GetSize(int(os.Stdout.Fd())); err == nil {
 		ui.width = width
 		ui.height = height
@@ -31,25 +31,25 @@ func NewTerminalUI() *TerminalUI {
 	return ui
 }
 
-// PrintWelcome 打印欢迎信息
+// PrintWelcome prints the welcome banner
 func (ui *TerminalUI) PrintWelcome() {
 	fmt.Println("╔════════════════════════════════════════╗")
-	fmt.Println("║     Claude Code Go v0.1.0              ║")
-	fmt.Println("║     交互式 AI 编程助手                  ║")
+	fmt.Printf("║     Claude Code Go %-19s ║\n", "v2.1.88")
+	fmt.Println("║     Interactive AI Coding Assistant    ║")
 	fmt.Println("╚════════════════════════════════════════╝")
 	fmt.Println()
 }
 
-// PrintPrompt 打印提示符
+// PrintPrompt prints the input prompt
 func (ui *TerminalUI) PrintPrompt() {
 	fmt.Print("\n❯ ")
 }
 
-// PrintMessage 打印消息
+// PrintMessage prints a chat message
 func (ui *TerminalUI) PrintMessage(role, content string) {
 	switch role {
 	case "user":
-		fmt.Printf("\n👤 你:\n%s\n", content)
+		fmt.Printf("\n👤 You:\n%s\n", content)
 	case "assistant":
 		fmt.Printf("\n🤖 Claude:\n%s\n", content)
 	case "system":
@@ -59,28 +59,28 @@ func (ui *TerminalUI) PrintMessage(role, content string) {
 	}
 }
 
-// PrintError 打印错误
+// PrintError prints an error message
 func (ui *TerminalUI) PrintError(err string) {
-	fmt.Printf("\n❌ 错误: %s\n", err)
+	fmt.Printf("\n❌ Error: %s\n", err)
 }
 
-// PrintSuccess 打印成功消息
+// PrintSuccess prints a success message
 func (ui *TerminalUI) PrintSuccess(msg string) {
 	fmt.Printf("\n✅ %s\n", msg)
 }
 
-// PrintToolUse 打印工具使用信息
+// PrintToolUse prints tool invocation info
 func (ui *TerminalUI) PrintToolUse(toolName string, input string) {
-	fmt.Printf("\n🔧 使用工具: %s\n", toolName)
+	fmt.Printf("\n🔧 Using tool: %s\n", toolName)
 	if input != "" {
-		fmt.Printf("   参数: %s\n", input)
+		fmt.Printf("   Args: %s\n", input)
 	}
 }
 
-// PrintToolResult 打印工具结果
+// PrintToolResult prints tool execution result
 func (ui *TerminalUI) PrintToolResult(success bool, output string) {
 	if success {
-		fmt.Printf("   结果: ✓\n")
+		fmt.Printf("   Result: ✓\n")
 		if output != "" {
 			lines := strings.Split(output, "\n")
 			for i, line := range lines {
@@ -92,37 +92,37 @@ func (ui *TerminalUI) PrintToolResult(success bool, output string) {
 			}
 		}
 	} else {
-		fmt.Printf("   结果: ✗ %s\n", output)
+		fmt.Printf("   Result: ✗ %s\n", output)
 	}
 }
 
-// PrintHelp 打印帮助信息
+// PrintHelp prints help text
 func (ui *TerminalUI) PrintHelp() {
-	fmt.Println("\n可用命令:")
-	fmt.Println("  /help      - 显示帮助")
-	fmt.Println("  /quit      - 退出程序")
-	fmt.Println("  /clear     - 清空对话历史")
-	fmt.Println("  /model     - 切换模型")
-	fmt.Println("  /tools     - 列出可用工具")
+	fmt.Println("\nAvailable commands:")
+	fmt.Println("  /help      - Show help")
+	fmt.Println("  /quit      - Exit the program")
+	fmt.Println("  /clear     - Clear conversation history")
+	fmt.Println("  /model     - Switch model")
+	fmt.Println("  /tools     - List available tools")
 	fmt.Println()
-	fmt.Println("快捷键:")
-	fmt.Println("  Ctrl+C     - 退出")
-	fmt.Println("  Ctrl+D     - 发送消息")
+	fmt.Println("Shortcuts:")
+	fmt.Println("  Ctrl+C     - Exit")
+	fmt.Println("  Ctrl+D     - Send message")
 	fmt.Println()
 }
 
-// ClearScreen 清屏
+// ClearScreen clears the screen
 func (ui *TerminalUI) ClearScreen() {
 	fmt.Print("\033[H\033[2J")
 }
 
-// SetSize 设置终端尺寸
+// SetSize sets terminal dimensions
 func (ui *TerminalUI) SetSize(width, height int) {
 	ui.width = width
 	ui.height = height
 }
 
-// WrapText 自动换行
+// WrapText wraps text to terminal width
 func (ui *TerminalUI) WrapText(text string) string {
 	lines := strings.Split(text, "\n")
 	var result []string
@@ -131,7 +131,7 @@ func (ui *TerminalUI) WrapText(text string) string {
 		if len(line) <= ui.width {
 			result = append(result, line)
 		} else {
-			// 简单换行
+			// Simple wrapping
 			for len(line) > ui.width {
 				result = append(result, line[:ui.width])
 				line = line[ui.width:]

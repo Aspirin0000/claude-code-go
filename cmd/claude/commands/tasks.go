@@ -38,27 +38,27 @@ func NewTasksCommand() *TasksCommand {
 	cmd := &TasksCommand{
 		BaseCommand: NewBaseCommand(
 			"tasks",
-			"列出和管理任务",
+			"List and manage tasks",
 			CategoryAdvanced,
 		),
 	}
-	cmd.WithAliases("task")
-	cmd.WithHelp(`使用: /tasks [add|done|list|remove] [task]
+	cmd.WithAliases("task", "todos", "todo")
+	cmd.WithHelp(`Usage: /tasks [add|done|list|remove] [task]
 
-任务管理系统，用于跟踪和管理待办任务。
+Task management system for tracking and managing to-do tasks.
 
-子命令:
-  add <description>    添加新任务
-  done <id>           标记任务为完成
-  list                列出所有任务 (默认)
-  remove <id>         删除任务
-  clear               清除所有已完成任务
-  priority <id> <p>   设置优先级 (high/medium/low)
-  tag <id> <tags...>  添加标签
+Subcommands:
+  add <description>    Add a new task
+  done <id>           Mark a task as completed
+  list                List all tasks (default)
+  remove <id>         Remove a task
+  clear               Clear all completed tasks
+  priority <id> <p>   Set priority (high/medium/low)
+  tag <id> <tags...>  Add tags
 
-示例:
-  /tasks add 实现用户登录功能
-  /tasks add "修复登录页面的bug" --priority high
+Examples:
+  /tasks add implement user login
+  /tasks add "fix login page bug" --priority high
   /tasks list
   /tasks done 1
   /tasks priority 1 high
@@ -77,15 +77,15 @@ func (t *TasksCommand) Execute(ctx context.Context, args []string) error {
 	switch subcommand {
 	case "add", "new", "create":
 		if len(args) < 2 {
-			fmt.Println("❌ 错误: 请提供任务描述")
-			fmt.Println("用法: /tasks add <description>")
+			fmt.Println("❌ Error: Please provide a task description")
+			fmt.Println("Usage: /tasks add <description>")
 			return nil
 		}
 		return t.addTask(args[1:])
 	case "done", "complete", "finish":
 		if len(args) < 2 {
-			fmt.Println("❌ 错误: 请提供任务ID")
-			fmt.Println("用法: /tasks done <id>")
+			fmt.Println("❌ Error: Please provide a task ID")
+			fmt.Println("Usage: /tasks done <id>")
 			return nil
 		}
 		return t.completeTask(args[1])
@@ -93,8 +93,8 @@ func (t *TasksCommand) Execute(ctx context.Context, args []string) error {
 		return t.listTasks()
 	case "remove", "rm", "delete":
 		if len(args) < 2 {
-			fmt.Println("❌ 错误: 请提供任务ID")
-			fmt.Println("用法: /tasks remove <id>")
+			fmt.Println("❌ Error: Please provide a task ID")
+			fmt.Println("Usage: /tasks remove <id>")
 			return nil
 		}
 		return t.removeTask(args[1])
@@ -102,15 +102,15 @@ func (t *TasksCommand) Execute(ctx context.Context, args []string) error {
 		return t.clearCompleted()
 	case "priority":
 		if len(args) < 3 {
-			fmt.Println("❌ 错误: 请提供任务ID和优先级")
-			fmt.Println("用法: /tasks priority <id> <high|medium|low>")
+			fmt.Println("❌ Error: Please provide a task ID and priority")
+			fmt.Println("Usage: /tasks priority <id> <high|medium|low>")
 			return nil
 		}
 		return t.setPriority(args[1], args[2])
 	case "tag":
 		if len(args) < 3 {
-			fmt.Println("❌ 错误: 请提供任务ID和标签")
-			fmt.Println("用法: /tasks tag <id> <tag1> [tag2...]")
+			fmt.Println("❌ Error: Please provide a task ID and tags")
+			fmt.Println("Usage: /tasks tag <id> <tag1> [tag2...]")
 			return nil
 		}
 		return t.addTags(args[1], args[2:])
@@ -172,7 +172,7 @@ func (t *TasksCommand) saveTasks(taskList *TaskList) error {
 func (t *TasksCommand) addTask(args []string) error {
 	taskList, err := t.loadTasks()
 	if err != nil {
-		return fmt.Errorf("加载任务失败: %w", err)
+		return fmt.Errorf("failed to load tasks: %w", err)
 	}
 
 	// Parse arguments for options
@@ -200,7 +200,7 @@ func (t *TasksCommand) addTask(args []string) error {
 	}
 
 	if description == "" {
-		fmt.Println("❌ 错误: 请提供任务描述")
+		fmt.Println("❌ Error: Please provide a task description")
 		return nil
 	}
 
@@ -240,16 +240,16 @@ func (t *TasksCommand) addTask(args []string) error {
 	taskList.Tasks = append(taskList.Tasks, task)
 
 	if err := t.saveTasks(taskList); err != nil {
-		return fmt.Errorf("保存任务失败: %w", err)
+		return fmt.Errorf("failed to save task: %w", err)
 	}
 
 	fmt.Println()
-	fmt.Println("✅ 任务已添加")
+	fmt.Println("✅ Task added")
 	fmt.Printf("   ID: %s\n", taskID)
-	fmt.Printf("   描述: %s\n", description)
-	fmt.Printf("   优先级: %s\n", priority)
+	fmt.Printf("   Description: %s\n", description)
+	fmt.Printf("   Priority: %s\n", priority)
 	if len(tags) > 0 {
-		fmt.Printf("   标签: %s\n", strings.Join(tags, ", "))
+		fmt.Printf("   Tags: %s\n", strings.Join(tags, ", "))
 	}
 	fmt.Println()
 
@@ -260,7 +260,7 @@ func (t *TasksCommand) addTask(args []string) error {
 func (t *TasksCommand) completeTask(taskID string) error {
 	taskList, err := t.loadTasks()
 	if err != nil {
-		return fmt.Errorf("加载任务失败: %w", err)
+		return fmt.Errorf("failed to load tasks: %w", err)
 	}
 
 	found := false
@@ -271,7 +271,7 @@ func (t *TasksCommand) completeTask(taskID string) error {
 			found = true
 
 			fmt.Println()
-			fmt.Printf("✅ 任务 %s 已完成\n", taskID)
+			fmt.Printf("✅ Task %s completed\n", taskID)
 			fmt.Printf("   %s\n", taskList.Tasks[i].Description)
 			fmt.Println()
 			break
@@ -279,7 +279,7 @@ func (t *TasksCommand) completeTask(taskID string) error {
 	}
 
 	if !found {
-		fmt.Printf("❌ 未找到任务 ID: %s\n", taskID)
+		fmt.Printf("❌ Task not found ID: %s\n", taskID)
 		return nil
 	}
 
@@ -290,7 +290,7 @@ func (t *TasksCommand) completeTask(taskID string) error {
 func (t *TasksCommand) removeTask(taskID string) error {
 	taskList, err := t.loadTasks()
 	if err != nil {
-		return fmt.Errorf("加载任务失败: %w", err)
+		return fmt.Errorf("failed to load tasks: %w", err)
 	}
 
 	found := false
@@ -304,17 +304,17 @@ func (t *TasksCommand) removeTask(taskID string) error {
 	}
 
 	if !found {
-		fmt.Printf("❌ 未找到任务 ID: %s\n", taskID)
+		fmt.Printf("❌ Task not found ID: %s\n", taskID)
 		return nil
 	}
 
 	taskList.Tasks = newTasks
 
 	if err := t.saveTasks(taskList); err != nil {
-		return fmt.Errorf("删除任务失败: %w", err)
+		return fmt.Errorf("failed to remove task: %w", err)
 	}
 
-	fmt.Printf("✅ 任务 %s 已删除\n", taskID)
+	fmt.Printf("✅ Task %s removed\n", taskID)
 
 	return nil
 }
@@ -323,19 +323,19 @@ func (t *TasksCommand) removeTask(taskID string) error {
 func (t *TasksCommand) listTasks() error {
 	taskList, err := t.loadTasks()
 	if err != nil {
-		return fmt.Errorf("加载任务失败: %w", err)
+		return fmt.Errorf("failed to load tasks: %w", err)
 	}
 
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║              ✅ 任务列表 (Task List)                      ║")
+	fmt.Println("║                 ✅ Task List                             ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
 
 	if len(taskList.Tasks) == 0 {
-		fmt.Println("   (暂无任务)")
+		fmt.Println("   (No tasks)")
 		fmt.Println()
-		fmt.Println("💡 使用 /tasks add <描述> 添加任务")
+		fmt.Println("💡 Use /tasks add <description> to add a task")
 		fmt.Println()
 		return nil
 	}
@@ -354,7 +354,7 @@ func (t *TasksCommand) listTasks() error {
 
 	// Display pending tasks
 	if len(pending) > 0 {
-		fmt.Printf("📋 待处理任务 (%d):\n", len(pending))
+		fmt.Printf("📋 Pending tasks (%d):\n", len(pending))
 		fmt.Println("  " + strings.Repeat("─", 50))
 		for _, task := range pending {
 			t.printTask(task)
@@ -364,7 +364,7 @@ func (t *TasksCommand) listTasks() error {
 
 	// Display completed tasks
 	if len(completed) > 0 {
-		fmt.Printf("✅ 已完成任务 (%d):\n", len(completed))
+		fmt.Printf("✅ Completed tasks (%d):\n", len(completed))
 		fmt.Println("  " + strings.Repeat("─", 50))
 		for _, task := range completed {
 			t.printTask(task)
@@ -373,7 +373,7 @@ func (t *TasksCommand) listTasks() error {
 	}
 
 	// Summary
-	fmt.Printf("总计: %d 待处理, %d 已完成\n", len(pending), len(completed))
+	fmt.Printf("Total: %d pending, %d completed\n", len(pending), len(completed))
 	fmt.Println()
 
 	return nil
@@ -399,11 +399,11 @@ func (t *TasksCommand) printTask(task Task) {
 	fmt.Printf("  %s [%s] %s %s\n", status, task.ID, priorityIcon, task.Description)
 
 	if len(task.Tags) > 0 {
-		fmt.Printf("      标签: %s\n", strings.Join(task.Tags, ", "))
+		fmt.Printf("      Tags: %s\n", strings.Join(task.Tags, ", "))
 	}
 
 	if task.Status == "completed" && !task.CompletedAt.IsZero() {
-		fmt.Printf("      完成于: %s\n", task.CompletedAt.Format("01-02 15:04"))
+		fmt.Printf("      Completed at: %s\n", task.CompletedAt.Format("01-02 15:04"))
 	}
 }
 
@@ -411,7 +411,7 @@ func (t *TasksCommand) printTask(task Task) {
 func (t *TasksCommand) clearCompleted() error {
 	taskList, err := t.loadTasks()
 	if err != nil {
-		return fmt.Errorf("加载任务失败: %w", err)
+		return fmt.Errorf("failed to load tasks: %w", err)
 	}
 
 	var pending []Task
@@ -426,26 +426,26 @@ func (t *TasksCommand) clearCompleted() error {
 	}
 
 	if completedCount == 0 {
-		fmt.Println("没有已完成的任务需要清除")
+		fmt.Println("No completed tasks to clear")
 		return nil
 	}
 
-	fmt.Printf("确定要清除 %d 个已完成的任务? (y/N): ", completedCount)
+	fmt.Printf("Are you sure you want to clear %d completed tasks? (y/N): ", completedCount)
 
 	var response string
 	fmt.Scanln(&response)
 	if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
-		fmt.Println("取消清除")
+		fmt.Println("Clear cancelled")
 		return nil
 	}
 
 	taskList.Tasks = pending
 
 	if err := t.saveTasks(taskList); err != nil {
-		return fmt.Errorf("清除任务失败: %w", err)
+		return fmt.Errorf("failed to clear tasks: %w", err)
 	}
 
-	fmt.Printf("✅ 已清除 %d 个已完成的任务\n", completedCount)
+	fmt.Printf("✅ Cleared %d completed tasks\n", completedCount)
 
 	return nil
 }
@@ -454,13 +454,13 @@ func (t *TasksCommand) clearCompleted() error {
 func (t *TasksCommand) setPriority(taskID, priority string) error {
 	priority = strings.ToLower(priority)
 	if priority != "high" && priority != "medium" && priority != "low" {
-		fmt.Println("❌ 无效的优先级，请使用: high, medium, 或 low")
+		fmt.Println("❌ Invalid priority, please use: high, medium, or low")
 		return nil
 	}
 
 	taskList, err := t.loadTasks()
 	if err != nil {
-		return fmt.Errorf("加载任务失败: %w", err)
+		return fmt.Errorf("failed to load tasks: %w", err)
 	}
 
 	found := false
@@ -473,15 +473,15 @@ func (t *TasksCommand) setPriority(taskID, priority string) error {
 	}
 
 	if !found {
-		fmt.Printf("❌ 未找到任务 ID: %s\n", taskID)
+		fmt.Printf("❌ Task not found ID: %s\n", taskID)
 		return nil
 	}
 
 	if err := t.saveTasks(taskList); err != nil {
-		return fmt.Errorf("保存任务失败: %w", err)
+		return fmt.Errorf("failed to save task: %w", err)
 	}
 
-	fmt.Printf("✅ 任务 %s 优先级已设置为 %s\n", taskID, priority)
+	fmt.Printf("✅ Task %s priority set to %s\n", taskID, priority)
 
 	return nil
 }
@@ -490,7 +490,7 @@ func (t *TasksCommand) setPriority(taskID, priority string) error {
 func (t *TasksCommand) addTags(taskID string, tags []string) error {
 	taskList, err := t.loadTasks()
 	if err != nil {
-		return fmt.Errorf("加载任务失败: %w", err)
+		return fmt.Errorf("failed to load tasks: %w", err)
 	}
 
 	found := false
@@ -503,15 +503,15 @@ func (t *TasksCommand) addTags(taskID string, tags []string) error {
 	}
 
 	if !found {
-		fmt.Printf("❌ 未找到任务 ID: %s\n", taskID)
+		fmt.Printf("❌ Task not found ID: %s\n", taskID)
 		return nil
 	}
 
 	if err := t.saveTasks(taskList); err != nil {
-		return fmt.Errorf("保存任务失败: %w", err)
+		return fmt.Errorf("failed to save task: %w", err)
 	}
 
-	fmt.Printf("✅ 已为任务 %s 添加标签: %s\n", taskID, strings.Join(tags, ", "))
+	fmt.Printf("✅ Added tags to task %s: %s\n", taskID, strings.Join(tags, ", "))
 
 	return nil
 }

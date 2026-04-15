@@ -35,10 +35,11 @@ type Tool struct {
 	InputSchema json.RawMessage `json:"input_schema"`
 }
 
-// ContentBlock represents a block in the API response.
+// ContentBlock represents a block in the API response or request.
 type ContentBlock struct {
 	Type      string          `json:"type"`
 	Text      string          `json:"text,omitempty"`
+	Content   string          `json:"content,omitempty"`
 	ID        string          `json:"id,omitempty"`
 	Name      string          `json:"name,omitempty"`
 	Input     json.RawMessage `json:"input,omitempty"`

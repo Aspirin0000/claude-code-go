@@ -1,6 +1,6 @@
 // cmd/claude/main.go
-// 来源: TypeScript CLI 入口
-// 重构: 使用 Cobra 框架的 Go 入口
+// Source: TypeScript CLI entry point
+// Refactor: Go entry point using the Cobra framework
 
 package main
 

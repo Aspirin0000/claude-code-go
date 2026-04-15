@@ -18,20 +18,20 @@ func NewDiffCommand() *DiffCommand {
 	return &DiffCommand{
 		BaseCommand: NewBaseCommand(
 			"diff",
-			"显示代码差异",
+			"Show code differences",
 			CategoryTools,
 		).
-			WithHelp(`显示 Git 差异或文件比较。
+			WithHelp(`Show Git diff or file comparisons.
 
-用法:
-  /diff              显示未暂存的更改
-  /diff --staged     显示暂存的更改
-  /diff <file>       显示特定文件的差异
+Usage:
+  /diff              Show unstaged changes
+  /diff --staged     Show staged changes
+  /diff <file>       Show diff for a specific file
 
-示例:
-  /diff              # 查看工作区更改
-  /diff --staged     # 查看暂存区更改
-  /diff main.go      # 查看特定文件更改`),
+Examples:
+  /diff              # View working directory changes
+  /diff --staged     # View staged changes
+  /diff main.go      # View changes for a specific file`),
 	}
 }
 
@@ -65,7 +65,7 @@ func (c *DiffCommand) Execute(ctx context.Context, args []string) error {
 	}
 
 	if len(output) == 0 {
-		fmt.Println("✓ 没有差异 (No differences)")
+		fmt.Println("✓ No differences")
 		return nil
 	}
 

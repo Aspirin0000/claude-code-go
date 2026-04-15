@@ -18,18 +18,18 @@ func NewCostCommand() *CostCommand {
 	return &CostCommand{
 		BaseCommand: NewBaseCommand(
 			"cost",
-			"显示成本追踪信息",
+			"Show cost tracking information",
 			CategoryAdvanced,
 		).
-			WithHelp(`显示当前会话的成本追踪信息。
+			WithHelp(`Show cost tracking information for the current session.
 
-包括:
-- 输入 token 使用量
-- 输出 token 使用量  
-- 估算成本
-- 模型定价信息
+Includes:
+- Input token usage
+- Output token usage
+- Estimated cost
+- Model pricing info
 
-使用: /cost`),
+Usage: /cost`),
 	}
 }
 
@@ -46,19 +46,19 @@ func (c *CostCommand) Execute(ctx context.Context, args []string) error {
 	totalCost := inputCost + outputCost
 
 	fmt.Println()
-	fmt.Println("💰 成本追踪 (Cost Tracking)")
+	fmt.Println("💰 Cost Tracking")
 	fmt.Println("═══════════════════════════════════")
-	fmt.Printf("\n📊 Token 使用量:\n")
-	fmt.Printf("   输入 tokens:  %d\n", inputTokens)
-	fmt.Printf("   输出 tokens:  %d\n", outputTokens)
-	fmt.Printf("   总计:         %d\n", totalTokens)
+	fmt.Printf("\n📊 Token Usage:\n")
+	fmt.Printf("   Input tokens:  %d\n", inputTokens)
+	fmt.Printf("   Output tokens: %d\n", outputTokens)
+	fmt.Printf("   Total:         %d\n", totalTokens)
 
-	fmt.Printf("\n💵 估算成本 (USD):\n")
-	fmt.Printf("   输入成本:     $%.4f\n", inputCost)
-	fmt.Printf("   输出成本:     $%.4f\n", outputCost)
-	fmt.Printf("   总成本:       $%.4f\n", totalCost)
+	fmt.Printf("\n💵 Estimated Cost (USD):\n")
+	fmt.Printf("   Input cost:  $%.4f\n", inputCost)
+	fmt.Printf("   Output cost: $%.4f\n", outputCost)
+	fmt.Printf("   Total cost:  $%.4f\n", totalCost)
 
-	fmt.Printf("\n📈 平均每条消息: %.0f tokens\n",
+	fmt.Printf("\n📈 Avg per message: %.0f tokens\n",
 		float64(totalTokens)/float64(len(messages)+1))
 	fmt.Println()
 

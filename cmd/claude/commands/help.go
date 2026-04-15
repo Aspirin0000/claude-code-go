@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Aspirin0000/claude-code-go/internal/mcp"
 	"github.com/Aspirin0000/claude-code-go/internal/tools"
 )
 
@@ -270,8 +271,27 @@ func (c *ToolsCommand) Execute(ctx context.Context, args []string) error {
 		}
 	}
 
+	// Display MCP tools
+	mcpManager := mcp.GetGlobalMCPManager()
+	mcpTools, _ := mcpManager.GetAllTools()
+	if len(mcpTools) > 0 {
+		if category == "" || category == "mcp" {
+			fmt.Printf("\nMCP Tools (%d):\n", len(mcpTools))
+			fmt.Println(strings.Repeat("-", 40))
+			for _, tool := range mcpTools {
+				fmt.Printf("  %-20s %s\n", tool.Name, tool.Description)
+			}
+		}
+	}
+
+	connected := mcpManager.GetConnectedServers()
+	if len(connected) > 0 {
+		fmt.Printf("\nConnected MCP servers: %s\n", strings.Join(connected, ", "))
+	}
+
 	fmt.Println()
-	fmt.Printf("Total: %d tool(s) available\n", len(allTools))
+	totalTools := len(allTools) + len(mcpTools)
+	fmt.Printf("Total: %d tool(s) available\n", totalTools)
 	fmt.Println("\nUse /permissions to check which tools are allowed")
 
 	return nil

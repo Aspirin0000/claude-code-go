@@ -15,6 +15,9 @@ var (
 	// Version is the application version
 	Version = "dev"
 
+	// TargetVersion is the Claude Code version this implementation is based on
+	TargetVersion = "v2.1.88"
+
 	// BuildTime is the build timestamp
 	BuildTime = "unknown"
 

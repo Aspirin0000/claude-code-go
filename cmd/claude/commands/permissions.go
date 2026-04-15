@@ -1,4 +1,4 @@
-// Package commands 提供 CLI 命令实现
+// Package commands provides CLI command implementations
 package commands
 
 import (
@@ -12,24 +12,24 @@ import (
 )
 
 // ============================================================================
-// Permission Level 定义
+// Permission Level Definitions
 // ============================================================================
 
-// PermissionLevel 权限级别类型
+// PermissionLevel permission level type
 type PermissionLevel string
 
 const (
-	// PermissionLevelAsk 询问模式 - 每次使用前都询问
+	// PermissionLevelAsk ask mode - confirm before each use
 	PermissionLevelAsk PermissionLevel = "ask"
-	// PermissionLevelReadOnly 只读模式 - 只允许读操作
+	// PermissionLevelReadOnly read-only mode - only allow read operations
 	PermissionLevelReadOnly PermissionLevel = "read-only"
-	// PermissionLevelStandard 标准模式 - 允许大多数工具，危险操作需确认
+	// PermissionLevelStandard standard mode - allow most tools, dangerous ops require confirmation
 	PermissionLevelStandard PermissionLevel = "standard"
-	// PermissionLevelFull 完全模式 - 允许所有工具无需询问
+	// PermissionLevelFull full mode - allow all tools without asking
 	PermissionLevelFull PermissionLevel = "full"
 )
 
-// AllPermissionLevels 所有权限级别
+// AllPermissionLevels all available permission levels.
 var AllPermissionLevels = []PermissionLevel{
 	PermissionLevelAsk,
 	PermissionLevelReadOnly,
@@ -37,7 +37,7 @@ var AllPermissionLevels = []PermissionLevel{
 	PermissionLevelFull,
 }
 
-// PermissionLevelInfo 权限级别信息
+// PermissionLevelInfo permission level metadata.
 type PermissionLevelInfo struct {
 	Level       PermissionLevel
 	Name        string
@@ -45,58 +45,58 @@ type PermissionLevelInfo struct {
 	Color       string
 }
 
-// PermissionLevelDetails 权限级别详细信息
+// PermissionLevelDetails detailed info for each permission level.
 var PermissionLevelDetails = map[PermissionLevel]PermissionLevelInfo{
 	PermissionLevelAsk: {
 		Level:       PermissionLevelAsk,
 		Name:        "Ask",
-		Description: "每次使用工具前都会询问确认",
+		Description: "Ask for confirmation before each tool use",
 		Color:       "\033[33m", // Yellow
 	},
 	PermissionLevelReadOnly: {
 		Level:       PermissionLevelReadOnly,
 		Name:        "Read-Only",
-		Description: "只允许读取文件和搜索操作",
+		Description: "Only allow file reading and search operations",
 		Color:       "\033[32m", // Green
 	},
 	PermissionLevelStandard: {
 		Level:       PermissionLevelStandard,
 		Name:        "Standard",
-		Description: "允许大多数工具，危险操作需要确认",
+		Description: "Allow most tools; dangerous operations require confirmation",
 		Color:       "\033[36m", // Cyan
 	},
 	PermissionLevelFull: {
 		Level:       PermissionLevelFull,
 		Name:        "Full",
-		Description: "允许所有工具无需确认（谨慎使用）",
+		Description: "Allow all tools without confirmation (use with caution)",
 		Color:       "\033[31m", // Red
 	},
 }
 
-// ResetColor 重置颜色
+// ResetColor ANSI reset code.
 const ResetColor = "\033[0m"
 
 // ============================================================================
-// Tool 分类
+// Tool Categories
 // ============================================================================
 
-// ToolCategory 工具分类
+// ToolCategory tool category.
 type ToolCategory string
 
 const (
-	// ToolCategoryRead 读取类工具
+	// ToolCategoryRead read tools
 	ToolCategoryRead ToolCategory = "read"
-	// ToolCategoryWrite 写入类工具
+	// ToolCategoryWrite write tools
 	ToolCategoryWrite ToolCategory = "write"
-	// ToolCategorySystem 系统类工具
+	// ToolCategorySystem system tools
 	ToolCategorySystem ToolCategory = "system"
-	// ToolCategoryNetwork 网络类工具
+	// ToolCategoryNetwork network tools
 	ToolCategoryNetwork ToolCategory = "network"
-	// ToolCategoryTask 任务类工具
+	// ToolCategoryTask task tools
 	ToolCategoryTask ToolCategory = "task"
 )
 
-// ToolInfo 工具信息
+// ToolInfo metadata for a tool used in permission checks.
 type ToolInfo struct {
 	Name        string
 	Category    ToolCategory
@@ -104,43 +104,43 @@ type ToolInfo struct {
 	IsDangerous bool
 }
 
-// ToolRegistry 工具注册表（用于权限管理）
+// ToolRegistry tool registry for permission management.
 var ToolRegistry = []ToolInfo{
-	// 读取类工具
-	{Name: "file_read", Category: ToolCategoryRead, Description: "读取文件内容", IsDangerous: false},
-	{Name: "grep", Category: ToolCategoryRead, Description: "搜索文件内容", IsDangerous: false},
-	{Name: "glob", Category: ToolCategoryRead, Description: "查找文件", IsDangerous: false},
+	// Read tools
+	{Name: "file_read", Category: ToolCategoryRead, Description: "Read file contents", IsDangerous: false},
+	{Name: "grep", Category: ToolCategoryRead, Description: "Search file contents", IsDangerous: false},
+	{Name: "glob", Category: ToolCategoryRead, Description: "Find files", IsDangerous: false},
 
-	// 写入类工具
-	{Name: "file_write", Category: ToolCategoryWrite, Description: "写入或创建文件", IsDangerous: true},
-	{Name: "file_edit", Category: ToolCategoryWrite, Description: "编辑文件内容", IsDangerous: true},
+	// Write tools
+	{Name: "file_write", Category: ToolCategoryWrite, Description: "Write or create files", IsDangerous: true},
+	{Name: "file_edit", Category: ToolCategoryWrite, Description: "Edit file contents", IsDangerous: true},
 
-	// 系统类工具
-	{Name: "bash", Category: ToolCategorySystem, Description: "执行 shell 命令", IsDangerous: true},
+	// System tools
+	{Name: "bash", Category: ToolCategorySystem, Description: "Execute shell commands", IsDangerous: true},
 
-	// 网络类工具
-	{Name: "web_search", Category: ToolCategoryNetwork, Description: "网页搜索", IsDangerous: false},
-	{Name: "web_fetch", Category: ToolCategoryNetwork, Description: "获取网页内容", IsDangerous: false},
+	// Network tools
+	{Name: "web_search", Category: ToolCategoryNetwork, Description: "Web search", IsDangerous: false},
+	{Name: "web_fetch", Category: ToolCategoryNetwork, Description: "Fetch web page content", IsDangerous: false},
 
-	// 任务类工具
-	{Name: "todo_write", Category: ToolCategoryTask, Description: "管理任务列表", IsDangerous: false},
-	{Name: "task_get", Category: ToolCategoryTask, Description: "获取任务信息", IsDangerous: false},
-	{Name: "task_create", Category: ToolCategoryTask, Description: "创建新任务", IsDangerous: false},
-	{Name: "task_update", Category: ToolCategoryTask, Description: "更新任务", IsDangerous: false},
-	{Name: "task_stop", Category: ToolCategoryTask, Description: "停止任务", IsDangerous: false},
-	{Name: "agent", Category: ToolCategoryTask, Description: "创建子代理", IsDangerous: true},
-	{Name: "notebook_edit", Category: ToolCategoryTask, Description: "编辑笔记本", IsDangerous: true},
+	// Task tools
+	{Name: "todo_write", Category: ToolCategoryTask, Description: "Manage task lists", IsDangerous: false},
+	{Name: "task_get", Category: ToolCategoryTask, Description: "Get task information", IsDangerous: false},
+	{Name: "task_create", Category: ToolCategoryTask, Description: "Create new task", IsDangerous: false},
+	{Name: "task_update", Category: ToolCategoryTask, Description: "Update task", IsDangerous: false},
+	{Name: "task_stop", Category: ToolCategoryTask, Description: "Stop task", IsDangerous: false},
+	{Name: "agent", Category: ToolCategoryTask, Description: "Create sub-agent", IsDangerous: true},
+	{Name: "notebook_edit", Category: ToolCategoryTask, Description: "Edit notebook", IsDangerous: true},
 }
 
 // ============================================================================
-// 权限判断逻辑
+// Permission logic
 // ============================================================================
 
-// IsToolAllowed 检查工具在当前权限级别下是否允许使用
+// IsToolAllowed checks if a tool is allowed at the current permission level
 func IsToolAllowed(level PermissionLevel, toolName string) (allowed bool, needsAsk bool) {
 	tool := findTool(toolName)
 	if tool == nil {
-		// 未知工具，在 ask 和 read-only 下不允许，其他级别允许但需确认
+		// Unknown tools: not allowed in ask/read-only, allowed in standard/full
 		switch level {
 		case PermissionLevelAsk:
 			return false, true
@@ -154,22 +154,22 @@ func IsToolAllowed(level PermissionLevel, toolName string) (allowed bool, needsA
 
 	switch level {
 	case PermissionLevelAsk:
-		// 所有工具都需要询问
+		// All tools require confirmation
 		return true, true
 
 	case PermissionLevelReadOnly:
-		// 只允许读取类工具
+		// Only read tools allowed
 		return tool.Category == ToolCategoryRead, false
 
 	case PermissionLevelStandard:
-		// 允许所有工具，但危险操作需要确认
+		// Allow all tools, but dangerous ones require confirmation
 		if tool.IsDangerous {
 			return true, true
 		}
 		return true, false
 
 	case PermissionLevelFull:
-		// 允许所有工具无需确认
+		// Allow all tools without confirmation
 		return true, false
 
 	default:
@@ -177,7 +177,7 @@ func IsToolAllowed(level PermissionLevel, toolName string) (allowed bool, needsA
 	}
 }
 
-// findTool 查找工具信息
+// findTool looks up tool info
 func findTool(name string) *ToolInfo {
 	for i := range ToolRegistry {
 		if ToolRegistry[i].Name == name {
@@ -187,7 +187,7 @@ func findTool(name string) *ToolInfo {
 	return nil
 }
 
-// GetAllowedTools 获取指定权限级别下允许的工具列表
+// GetAllowedTools returns the list of tools allowed at a given permission level
 func GetAllowedTools(level PermissionLevel) []ToolInfo {
 	var allowed []ToolInfo
 	for _, tool := range ToolRegistry {
@@ -199,7 +199,7 @@ func GetAllowedTools(level PermissionLevel) []ToolInfo {
 	return allowed
 }
 
-// GetToolsNeedingAsk 获取需要询问的工具列表
+// GetToolsNeedingAsk returns the list of tools that require confirmation
 func GetToolsNeedingAsk(level PermissionLevel) []ToolInfo {
 	var needsAsk []ToolInfo
 	for _, tool := range ToolRegistry {
@@ -212,20 +212,19 @@ func GetToolsNeedingAsk(level PermissionLevel) []ToolInfo {
 }
 
 // ============================================================================
-// 配置集成
+// Config Integration
 // ============================================================================
 
-// ConfigKeyPermissionLevel 配置文件中权限级别的键名
+// ConfigKeyPermissionLevel config key for permission level
 const ConfigKeyPermissionLevel = "permission_level"
 
-// GetCurrentPermissionLevel 从配置获取当前权限级别
+// GetCurrentPermissionLevel reads the current permission level from config
 func GetCurrentPermissionLevel() PermissionLevel {
 	cfg, err := config.Load(config.GetConfigPath())
 	if err != nil {
-		return PermissionLevelStandard // 默认标准模式
+		return PermissionLevelStandard // default
 	}
 
-	// 从 Env 中读取权限级别
 	if levelStr, ok := cfg.Env[ConfigKeyPermissionLevel]; ok {
 		level := PermissionLevel(levelStr)
 		if isValidPermissionLevel(level) {
@@ -236,31 +235,30 @@ func GetCurrentPermissionLevel() PermissionLevel {
 	return PermissionLevelStandard
 }
 
-// SetPermissionLevel 设置权限级别并保存到配置
+// SetPermissionLevel sets the permission level and saves it to config
 func SetPermissionLevel(level PermissionLevel) error {
 	if !isValidPermissionLevel(level) {
-		return fmt.Errorf("无效的权限级别: %s", level)
+		return fmt.Errorf("invalid permission level: %s", level)
 	}
 
 	cfg, err := config.Load(config.GetConfigPath())
 	if err != nil {
-		return fmt.Errorf("加载配置失败: %w", err)
+		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// 保存到 Env
 	if cfg.Env == nil {
 		cfg.Env = make(map[string]string)
 	}
 	cfg.Env[ConfigKeyPermissionLevel] = string(level)
 
 	if err := cfg.Save(config.GetConfigPath()); err != nil {
-		return fmt.Errorf("保存配置失败: %w", err)
+		return fmt.Errorf("failed to save config: %w", err)
 	}
 
 	return nil
 }
 
-// isValidPermissionLevel 检查权限级别是否有效
+// isValidPermissionLevel checks if a permission level is valid
 func isValidPermissionLevel(level PermissionLevel) bool {
 	for _, valid := range AllPermissionLevels {
 		if level == valid {
@@ -271,15 +269,15 @@ func isValidPermissionLevel(level PermissionLevel) bool {
 }
 
 // ============================================================================
-// 命令实现
+// Command Implementation
 // ============================================================================
 
-// PermissionsCommand 权限管理命令
+// PermissionsCommand manages tool permissions
 type PermissionsCommand struct {
 	BaseCommand
 }
 
-// NewPermissionsCommand 创建权限命令
+// NewPermissionsCommand creates the /permissions command
 func NewPermissionsCommand() *PermissionsCommand {
 	cmd := &PermissionsCommand{
 		BaseCommand: *NewBaseCommand(
@@ -304,10 +302,9 @@ Permission Levels:
 	return cmd
 }
 
-// Execute 执行命令
+// Execute runs the command
 func (c *PermissionsCommand) Execute(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		// 显示当前权限级别
 		return c.showCurrentLevel()
 	}
 
@@ -317,12 +314,11 @@ func (c *PermissionsCommand) Execute(ctx context.Context, args []string) error {
 	case "help", "-h", "--help":
 		return c.showHelp()
 	default:
-		// 尝试设置为指定的权限级别
 		return c.setLevel(args[0])
 	}
 }
 
-// showCurrentLevel 显示当前权限级别
+// showCurrentLevel displays the current permission level
 func (c *PermissionsCommand) showCurrentLevel() error {
 	current := GetCurrentPermissionLevel()
 	info := PermissionLevelDetails[current]
@@ -338,7 +334,6 @@ func (c *PermissionsCommand) showCurrentLevel() error {
 	fmt.Printf("Description: %s\n", info.Description)
 	fmt.Println()
 
-	// 显示当前级别下允许的工具
 	fmt.Println("Allowed Tools:")
 	allowed := GetAllowedTools(current)
 	if len(allowed) == 0 {
@@ -354,7 +349,6 @@ func (c *PermissionsCommand) showCurrentLevel() error {
 		}
 	}
 
-	// 显示需要询问的工具
 	needsAsk := GetToolsNeedingAsk(current)
 	if len(needsAsk) > 0 {
 		fmt.Println("\nTools requiring confirmation:")
@@ -371,7 +365,7 @@ func (c *PermissionsCommand) showCurrentLevel() error {
 	return nil
 }
 
-// listLevels 列出所有权限级别
+// listLevels lists all permission levels
 func (c *PermissionsCommand) listLevels() error {
 	current := GetCurrentPermissionLevel()
 
@@ -400,7 +394,6 @@ func (c *PermissionsCommand) listLevels() error {
 		)
 		fmt.Printf("   %s\n", info.Description)
 
-		// 显示该级别允许的工具数量
 		allowed := GetAllowedTools(level)
 		needsAsk := GetToolsNeedingAsk(level)
 
@@ -418,12 +411,11 @@ func (c *PermissionsCommand) listLevels() error {
 	return nil
 }
 
-// setLevel 设置权限级别
+// setLevel sets the permission level
 func (c *PermissionsCommand) setLevel(levelStr string) error {
-	// 标准化输入
 	levelStr = strings.ToLower(strings.TrimSpace(levelStr))
 
-	// 处理别名
+	// Handle aliases
 	switch levelStr {
 	case "ask", "a":
 		levelStr = "ask"
@@ -459,7 +451,6 @@ func (c *PermissionsCommand) setLevel(levelStr string) error {
 		return nil
 	}
 
-	// 设置新级别
 	if err := SetPermissionLevel(level); err != nil {
 		return fmt.Errorf("failed to set permission level: %w", err)
 	}
@@ -475,7 +466,6 @@ func (c *PermissionsCommand) setLevel(levelStr string) error {
 	fmt.Printf("Description: %s\n", info.Description)
 	fmt.Println()
 
-	// 显示安全提示
 	if level == PermissionLevelFull {
 		fmt.Printf("%s⚠️  Warning:%s You have enabled full permissions.\n",
 			"\033[31m", ResetColor)
@@ -490,7 +480,7 @@ func (c *PermissionsCommand) setLevel(levelStr string) error {
 	return nil
 }
 
-// showHelp 显示帮助信息
+// showHelp shows help text
 func (c *PermissionsCommand) showHelp() error {
 	fmt.Println()
 	fmt.Printf("Usage: %s [command|level]\n", c.Name())
@@ -521,7 +511,7 @@ func (c *PermissionsCommand) showHelp() error {
 	return nil
 }
 
-// GetAllowedToolsForRegistry 根据权限级别过滤工具注册表
+// GetAllowedToolsForRegistry filters the tool registry by permission level
 func GetAllowedToolsForRegistry(registry *tools.Registry, level PermissionLevel) []tools.Tool {
 	allTools := registry.List()
 	var allowed []tools.Tool
@@ -536,7 +526,7 @@ func GetAllowedToolsForRegistry(registry *tools.Registry, level PermissionLevel)
 	return allowed
 }
 
-// ShouldAskBeforeToolUse 检查使用工具前是否需要询问
+// ShouldAskBeforeToolUse checks whether to prompt before using a tool
 func ShouldAskBeforeToolUse(toolName string) bool {
 	level := GetCurrentPermissionLevel()
 	_, needsAsk := IsToolAllowed(level, toolName)

@@ -8,28 +8,28 @@ import (
 	"runtime"
 )
 
-// ClearCommand 清除终端屏幕
+// ClearCommand clears the terminal screen
 type ClearCommand struct {
 	*BaseCommand
 }
 
-// NewClearCommand 创建clear命令
+// NewClearCommand creates the clear command
 func NewClearCommand() *ClearCommand {
 	return &ClearCommand{
 		BaseCommand: NewBaseCommand(
 			"clear",
-			"清除终端屏幕",
+			"Clear the terminal screen",
 			CategoryGeneral,
 		).WithAliases("cls", "clr").
-			WithHelp(`使用: /clear
+			WithHelp(`Usage: /clear
 
-清除终端屏幕内容。
+Clear the terminal screen.
 
-别名: /cls, /clr`),
+Aliases: /cls, /clr`),
 	}
 }
 
-// Execute 执行清除屏幕操作
+// Execute clears the screen
 func (c *ClearCommand) Execute(ctx context.Context, args []string) error {
 	var cmd *exec.Cmd
 
@@ -43,7 +43,7 @@ func (c *ClearCommand) Execute(ctx context.Context, args []string) error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		// 如果系统命令失败，使用ANSI转义码作为后备方案
+		// Fallback to ANSI escape codes if system command fails
 		fmt.Print("\033[2J\033[H")
 		return nil
 	}

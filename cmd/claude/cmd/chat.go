@@ -13,6 +13,7 @@ import (
 	"github.com/Aspirin0000/claude-code-go/cmd/claude/commands"
 	"github.com/Aspirin0000/claude-code-go/internal/api"
 	"github.com/Aspirin0000/claude-code-go/internal/config"
+	"github.com/Aspirin0000/claude-code-go/internal/mcp"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
 	"github.com/Aspirin0000/claude-code-go/internal/tools"
 	tea "github.com/charmbracelet/bubbletea"
@@ -45,7 +46,7 @@ var rootCmd = &cobra.Command{
   - Debug and fix issues
   - Integrate with MCP servers
 
-This is an unofficial Go implementation based on Claude Code v2.1.88.`,
+  This is an unofficial Go implementation based on Claude Code ` + commands.TargetVersion + `.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runCLI()
 	},
@@ -102,6 +103,11 @@ func runSimpleREPL() error {
 	}
 
 	state.InitSessionStorage(cfg)
+
+	mcpManager := mcp.GetGlobalMCPManager()
+	if err := mcpManager.Initialize(cfg); err == nil {
+		_ = mcpManager.ConnectAll()
+	}
 
 	apiKey := apiKeyFlag
 	if apiKey == "" {
@@ -166,7 +172,7 @@ func runSimpleREPL() error {
 func printWelcome() {
 	fmt.Println()
 	fmt.Println("╔══════════════════════════════════════════════════════════╗")
-	fmt.Println("║              Claude Code Go - v2.1.88                   ║")
+	fmt.Printf("║              Claude Code Go - %-25s ║\n", commands.TargetVersion)
 	fmt.Println("║         AI-Powered Coding Assistant (Unofficial)        ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
@@ -265,19 +271,15 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 		})
 
 		// Execute tools
+		ctx = context.WithValue(ctx, tools.APIClientContextKey, client)
 		for _, block := range toolUses {
 			fmt.Printf("\n🔧 Using tool: %s\n", block.Name)
-			result, err := registry.Call(ctx, block.Name, block.Input)
-			var resultText string
+			resultText, err := executeTool(ctx, registry, block.Name, block.Input)
 			if err != nil {
 				fmt.Printf("   Error: %v\n", err)
 				resultText = fmt.Sprintf("Error: %v", err)
-			} else if !result.Success {
-				fmt.Printf("   Failed: %s\n", result.Error)
-				resultText = fmt.Sprintf("Error: %s", result.Error)
 			} else {
 				fmt.Printf("   Success\n")
-				resultText = string(result.Data)
 			}
 
 			state.GlobalState.AddMessage(state.Message{
@@ -287,7 +289,7 @@ func processUserMessage(ctx context.Context, client *api.Client, registry *tools
 					{
 						Type:      "tool_result",
 						ToolUseID: block.ID,
-						Text:      resultText,
+						Content:   resultText,
 					},
 				},
 			})
@@ -319,6 +321,7 @@ func buildAPIMessagesFromState() []api.Message {
 				apiMsg.Blocks[i] = api.ContentBlock{
 					Type:      b.Type,
 					Text:      b.Text,
+					Content:   b.Content,
 					ID:        b.ID,
 					Name:      b.Name,
 					Input:     b.Input,
@@ -392,6 +395,11 @@ func NewApp() *App {
 
 	state.InitSessionStorage(cfg)
 
+	mcpManager := mcp.GetGlobalMCPManager()
+	if err := mcpManager.Initialize(cfg); err == nil {
+		_ = mcpManager.ConnectAll()
+	}
+
 	var client *api.Client
 	if cfg.APIKey != "" {
 		client = api.NewClient(cfg.APIKey, cfg.Model)
@@ -445,7 +453,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) View() string {
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render("🚀 Claude Code Go v0.1.0"))
+	b.WriteString(titleStyle.Render("🚀 Claude Code Go " + commands.TargetVersion))
 	b.WriteString("\n\n")
 
 	messages := state.GlobalState.GetMessages()
@@ -458,9 +466,26 @@ func (a *App) View() string {
 		msg := messages[i]
 		switch msg.Role {
 		case "user":
-			b.WriteString(userStyle.Render("You: ") + msg.Content)
+			if msg.Content == "" && len(msg.Blocks) > 0 {
+				b.WriteString(userStyle.Render("You: ") + "[tool results]")
+			} else {
+				b.WriteString(userStyle.Render("You: ") + msg.Content)
+			}
 		case "assistant":
-			b.WriteString(assistantStyle.Render("Claude: ") + msg.Content)
+			content := msg.Content
+			if content == "" && len(msg.Blocks) > 0 {
+				hasToolUse := false
+				for _, block := range msg.Blocks {
+					if block.Type == "tool_use" {
+						hasToolUse = true
+						break
+					}
+				}
+				if hasToolUse {
+					content = "[using tools...]"
+				}
+			}
+			b.WriteString(assistantStyle.Render("Claude: ") + content)
 		case "system":
 			b.WriteString(systemStyle.Render(msg.Content))
 		}
@@ -552,15 +577,11 @@ func (a *App) processMessage() tea.Cmd {
 			})
 
 			// Execute tools
+			ctx := context.WithValue(context.Background(), tools.APIClientContextKey, a.apiClient)
 			for _, block := range toolUses {
-				result, err := a.toolRegistry.Call(context.Background(), block.Name, block.Input)
-				var resultText string
+				resultText, err := executeTool(ctx, a.toolRegistry, block.Name, block.Input)
 				if err != nil {
 					resultText = fmt.Sprintf("Error: %v", err)
-				} else if !result.Success {
-					resultText = fmt.Sprintf("Error: %s", result.Error)
-				} else {
-					resultText = string(result.Data)
 				}
 
 				state.GlobalState.AddMessage(state.Message{
@@ -570,7 +591,7 @@ func (a *App) processMessage() tea.Cmd {
 						{
 							Type:      "tool_result",
 							ToolUseID: block.ID,
-							Text:      resultText,
+							Content:   resultText,
 						},
 					},
 				})
@@ -592,5 +613,42 @@ func buildToolsList(registry *tools.Registry) []api.Tool {
 			InputSchema: schemaJSON,
 		}
 	}
+
+	mcpTools, err := mcp.GetGlobalMCPManager().GetAllTools()
+	if err == nil {
+		toolsList = append(toolsList, mcpTools...)
+	}
+
 	return toolsList
+}
+
+func executeTool(ctx context.Context, registry *tools.Registry, toolName string, input json.RawMessage) (string, error) {
+	if strings.HasPrefix(toolName, "mcp__") {
+		var arguments map[string]interface{}
+		if len(input) > 0 {
+			if err := json.Unmarshal(input, &arguments); err != nil {
+				return "", fmt.Errorf("failed to parse MCP tool arguments: %w", err)
+			}
+		}
+		result, err := mcp.GetGlobalMCPManager().ExecuteTool(ctx, toolName, arguments)
+		if err != nil {
+			return "", err
+		}
+		var parts []string
+		for _, block := range result.Content {
+			if block.Type == "text" {
+				parts = append(parts, block.Text)
+			}
+		}
+		return strings.Join(parts, "\n"), nil
+	}
+
+	result, err := registry.Call(ctx, toolName, input)
+	if err != nil {
+		return "", err
+	}
+	if !result.Success {
+		return "", fmt.Errorf("%s", result.Error)
+	}
+	return string(result.Data), nil
 }

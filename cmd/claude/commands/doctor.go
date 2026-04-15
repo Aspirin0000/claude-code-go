@@ -53,6 +53,7 @@ func (c *DoctorCommand) Execute(ctx context.Context, args []string) error {
 		{"Go Version", c.checkGoVersion},
 		{"Git Installation", c.checkGit},
 		{"API Key", c.checkAPIKey},
+		{"Anthropic API", c.checkAnthropicAPI},
 		{"Environment Variables", c.checkEnv},
 		{"Config File", c.checkConfig},
 		{"Network Connection", c.checkNetwork},
@@ -150,6 +151,35 @@ func (c *DoctorCommand) checkNetwork() (bool, string) {
 		return false, "Unable to connect to network"
 	}
 	return true, "Network connection OK"
+}
+
+func (c *DoctorCommand) checkAnthropicAPI() (bool, string) {
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		cfgPath := config.GetConfigPath()
+		cfg, err := config.Load(cfgPath)
+		if err == nil {
+			apiKey = cfg.APIKey
+		}
+	}
+
+	if apiKey == "" {
+		return false, "No API key available"
+	}
+
+	// Try a simple HEAD request to Anthropic API
+	cmd := exec.Command("curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "-H", "x-api-key: "+apiKey, "-H", "anthropic-version: 2023-06-01", "https://api.anthropic.com/v1/models")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, "Unable to reach Anthropic API"
+	}
+
+	code := strings.TrimSpace(string(out))
+	if code == "200" || code == "401" {
+		// 401 means key is valid format but may lack permissions; still means API is reachable
+		return true, "Anthropic API is reachable"
+	}
+	return false, fmt.Sprintf("Anthropic API returned HTTP %s", code)
 }
 
 func getConfigDir() string {

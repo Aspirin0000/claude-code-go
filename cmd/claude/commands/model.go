@@ -22,10 +22,38 @@ type AIModelInfo struct {
 
 // AvailableModels defines all supported AI models
 var AvailableModels = map[string]AIModelInfo{
+	"claude-sonnet-4-20250514": {
+		ID:          "claude-sonnet-4-20250514",
+		Name:        "Claude 4 Sonnet",
+		Description: "Balanced performance and speed for most tasks (latest)",
+		ContextWin:  200000,
+		InputPrice:  3.0,
+		OutputPrice: 15.0,
+		Strengths: []string{
+			"Everyday conversations",
+			"Code assistance",
+			"Content summarization",
+			"Multilingual support",
+		},
+	},
+	"claude-opus-4-20250514": {
+		ID:          "claude-opus-4-20250514",
+		Name:        "Claude 4 Opus",
+		Description: "Most capable Claude model for complex tasks",
+		ContextWin:  200000,
+		InputPrice:  15.0,
+		OutputPrice: 75.0,
+		Strengths: []string{
+			"Complex reasoning and analysis",
+			"Creative writing",
+			"Code generation",
+			"Detailed technical documentation",
+		},
+	},
 	"claude-3-opus-20240229": {
 		ID:          "claude-3-opus-20240229",
 		Name:        "Claude 3 Opus",
-		Description: "Most capable Claude model for complex tasks",
+		Description: "Most capable Claude 3 model for complex tasks",
 		ContextWin:  200000,
 		InputPrice:  15.0,
 		OutputPrice: 75.0,
@@ -39,7 +67,7 @@ var AvailableModels = map[string]AIModelInfo{
 	"claude-3-sonnet-20240229": {
 		ID:          "claude-3-sonnet-20240229",
 		Name:        "Claude 3 Sonnet",
-		Description: "Balanced performance and speed for most tasks",
+		Description: "Balanced Claude 3 model for most tasks",
 		ContextWin:  200000,
 		InputPrice:  3.0,
 		OutputPrice: 15.0,
@@ -199,19 +227,14 @@ func (c *ModelCommand) switchModel(modelName string) error {
 		}
 	}
 
+	// If no match in known models, allow arbitrary model ID
 	if targetModel == nil {
-		fmt.Printf("\n❌ Error: unknown model '%s'\n\n", modelName)
-		fmt.Println("Available models:")
-		for _, model := range AvailableModels {
-			fmt.Printf("  • %s (%s)\n", model.ID, model.Name)
+		targetModel = &AIModelInfo{
+			ID:          modelName,
+			Name:        modelName,
+			Description: "Custom or newly released model",
+			ContextWin:  200000,
 		}
-		fmt.Println()
-		fmt.Println("Tip: partial matches are supported, for example:")
-		fmt.Println("  /model opus   → switches to claude-3-opus-20240229")
-		fmt.Println("  /model sonnet → switches to claude-3-sonnet-20240229")
-		fmt.Println("  /model haiku  → switches to claude-3-haiku-20240307")
-		fmt.Println()
-		return fmt.Errorf("unknown model: %s", modelName)
 	}
 
 	// Get current model for comparison

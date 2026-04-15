@@ -1,6 +1,6 @@
-// Package tools 提供 Task 工具完整实现
-// 来源: src/tools/TaskTool/ (多个文件)
-// 重构: Go Task 工具（完整实现，支持持久化）
+// Package tools provides complete Task tool implementation
+// Source: src/tools/TaskTool/ (multiple files)
+// Refactored: Go Task tool (complete implementation with persistence)
 package tools
 
 import (
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// TaskStatus 任务状态
+// TaskStatus Task status
 type TaskStatus string
 
 const (
@@ -23,7 +23,7 @@ const (
 	TaskStatusPending    TaskStatus = "pending"
 )
 
-// TaskPriority 任务优先级
+// TaskPriority Task priority
 type TaskPriority string
 
 const (
@@ -32,7 +32,7 @@ const (
 	TaskPriorityLow    TaskPriority = "low"
 )
 
-// Task 任务定义
+// Task Task definition
 type Task struct {
 	ID          string       `json:"id"`
 	Content     string       `json:"content"`
@@ -45,21 +45,21 @@ type Task struct {
 	Tags        []string     `json:"tags,omitempty"`
 }
 
-// TaskManager 任务管理器
+// TaskManager Task manager
 type TaskManager struct {
 	tasks   map[string]*Task
 	mu      sync.RWMutex
 	dataDir string
 }
 
-// GlobalTaskManager 全局任务管理器实例
+// GlobalTaskManager Global task manager instance
 var GlobalTaskManager *TaskManager
 
 func init() {
 	GlobalTaskManager = NewTaskManager()
 }
 
-// NewTaskManager 创建新的任务管理器
+// NewTaskManager Create a new task manager
 func NewTaskManager() *TaskManager {
 	tm := &TaskManager{
 		tasks:   make(map[string]*Task),
@@ -69,7 +69,7 @@ func NewTaskManager() *TaskManager {
 	return tm
 }
 
-// getTaskDataDir 获取任务数据目录
+// getTaskDataDir Get task data directory
 func getTaskDataDir() string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -78,12 +78,12 @@ func getTaskDataDir() string {
 	return filepath.Join(configDir, "claude", "tasks")
 }
 
-// getTaskFilePath 获取任务文件路径
+// getTaskFilePath Get task file path
 func (tm *TaskManager) getTaskFilePath() string {
 	return filepath.Join(tm.dataDir, "tasks.json")
 }
 
-// loadTasks 从文件加载任务
+// loadTasks Load tasks from file
 func (tm *TaskManager) loadTasks() error {
 	taskFile := tm.getTaskFilePath()
 
@@ -111,7 +111,7 @@ func (tm *TaskManager) loadTasks() error {
 	return nil
 }
 
-// saveTasks 保存任务到文件
+// saveTasks Save tasks to file
 func (tm *TaskManager) saveTasks() error {
 	tm.mu.RLock()
 	tasks := make([]*Task, 0, len(tm.tasks))
@@ -138,7 +138,7 @@ func (tm *TaskManager) saveTasks() error {
 	return nil
 }
 
-// CreateTask 创建新任务
+// CreateTask Create a new task
 func (tm *TaskManager) CreateTask(content string, priority TaskPriority, parentID string) (*Task, error) {
 	if content == "" {
 		return nil, fmt.Errorf("task content cannot be empty")
@@ -169,7 +169,7 @@ func (tm *TaskManager) CreateTask(content string, priority TaskPriority, parentI
 	return task, nil
 }
 
-// GetTask 获取任务
+// GetTask Get a task
 func (tm *TaskManager) GetTask(taskID string) (*Task, error) {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
@@ -182,7 +182,7 @@ func (tm *TaskManager) GetTask(taskID string) (*Task, error) {
 	return task, nil
 }
 
-// UpdateTask 更新任务
+// UpdateTask Update a task
 func (tm *TaskManager) UpdateTask(taskID string, updates map[string]interface{}) (*Task, error) {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
@@ -222,7 +222,7 @@ func (tm *TaskManager) UpdateTask(taskID string, updates map[string]interface{})
 	return task, nil
 }
 
-// DeleteTask 删除任务
+// DeleteTask Delete a task
 func (tm *TaskManager) DeleteTask(taskID string) error {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
@@ -236,7 +236,7 @@ func (tm *TaskManager) DeleteTask(taskID string) error {
 	return tm.saveTasks()
 }
 
-// ListTasks 列出所有任务
+// ListTasks List all tasks
 func (tm *TaskManager) ListTasks(statusFilter string) []*Task {
 	tm.mu.RLock()
 	defer tm.mu.RUnlock()
@@ -251,21 +251,21 @@ func (tm *TaskManager) ListTasks(statusFilter string) []*Task {
 	return tasks
 }
 
-// StopTask 停止任务（将状态设为 cancelled）
+// StopTask Stop a task (set status to cancelled)
 func (tm *TaskManager) StopTask(taskID string) (*Task, error) {
 	return tm.UpdateTask(taskID, map[string]interface{}{
 		"status": TaskStatusCancelled,
 	})
 }
 
-// generateTaskID 生成任务 ID
+// generateTaskID Generate a task ID
 func (tm *TaskManager) generateTaskID() string {
 	return fmt.Sprintf("task_%d", time.Now().UnixNano())
 }
 
 // ============ Tool Implementations ============
 
-// TaskGetTool 获取任务工具
+// TaskGetTool Get task tool
 type TaskGetTool struct{}
 
 func (t *TaskGetTool) Name() string        { return "task_get" }
@@ -306,7 +306,7 @@ func (t *TaskGetTool) Call(ctx context.Context, input json.RawMessage) (json.Raw
 	})
 }
 
-// TaskCreateTool 创建任务工具
+// TaskCreateTool Create task tool
 type TaskCreateTool struct{}
 
 func (t *TaskCreateTool) Name() string        { return "task_create" }
@@ -359,7 +359,7 @@ func (t *TaskCreateTool) Call(ctx context.Context, input json.RawMessage) (json.
 	})
 }
 
-// TaskUpdateTool 更新任务工具
+// TaskUpdateTool Update task tool
 type TaskUpdateTool struct{}
 
 func (t *TaskUpdateTool) Name() string        { return "task_update" }
@@ -429,7 +429,7 @@ func (t *TaskUpdateTool) Call(ctx context.Context, input json.RawMessage) (json.
 	})
 }
 
-// TaskStopTool 停止任务工具
+// TaskStopTool Stop task tool
 type TaskStopTool struct{}
 
 func (t *TaskStopTool) Name() string        { return "task_stop" }
@@ -471,7 +471,7 @@ func (t *TaskStopTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	})
 }
 
-// TaskListTool 列出任务工具（额外添加）
+// TaskListTool List task tool (extra addition)
 type TaskListTool struct{}
 
 func (t *TaskListTool) Name() string        { return "task_list" }

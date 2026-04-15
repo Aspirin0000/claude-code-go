@@ -48,14 +48,14 @@ var (
 	}
 )
 
-// BashCommand 执行bash命令
+// BashCommand executes bash commands
 type BashCommand struct {
 	*BaseCommand
 	timeout time.Duration
 	dryRun  bool
 }
 
-// NewBashCommand 创建bash命令
+// NewBashCommand creates a bash command
 func NewBashCommand() *BashCommand {
 	return &BashCommand{
 		BaseCommand: NewBaseCommand(
@@ -89,7 +89,7 @@ Aliases: /sh, /shell, /exec`),
 	}
 }
 
-// Execute 执行bash命令
+// Execute executes bash commands
 func (c *BashCommand) Execute(ctx context.Context, args []string) error {
 	if len(args) == 0 {
 		return c.showHelp()
@@ -133,7 +133,7 @@ func (c *BashCommand) Execute(ctx context.Context, args []string) error {
 	return c.executeCommand(ctx, command)
 }
 
-// parseArgs 解析命令参数
+// parseArgs parses command arguments
 func (c *BashCommand) parseArgs(args []string) (string, error) {
 	var commandParts []string
 	useCFlag := false
@@ -187,7 +187,7 @@ func (c *BashCommand) parseArgs(args []string) (string, error) {
 	return command, nil
 }
 
-// checkPermissions 检查当前权限级别是否允许执行bash命令
+// checkPermissions checks if the current permission level allows bash command execution
 func (c *BashCommand) checkPermissions(command string) error {
 	level := GetCurrentPermissionLevel()
 
@@ -207,7 +207,7 @@ func (c *BashCommand) checkPermissions(command string) error {
 	return nil
 }
 
-// isReadonlySafe 检查命令是否是只读安全命令
+// isReadonlySafe checks if the command is read-only safe
 func (c *BashCommand) isReadonlySafe(command string) bool {
 	// Extract the first command from the command string
 	parts := strings.Fields(command)
@@ -226,7 +226,7 @@ func (c *BashCommand) isReadonlySafe(command string) bool {
 	return false
 }
 
-// validateCommand 验证命令是否安全
+// validateCommand validates if the command is safe
 func (c *BashCommand) validateCommand(command string) error {
 	// Check for dangerous patterns
 	for _, pattern := range dangerousPatterns {
@@ -242,7 +242,7 @@ func (c *BashCommand) validateCommand(command string) error {
 	return nil
 }
 
-// needsConfirmation 检查命令是否需要确认
+// needsConfirmation checks if the command needs confirmation
 func (c *BashCommand) needsConfirmation(command string) bool {
 	level := GetCurrentPermissionLevel()
 
@@ -260,7 +260,7 @@ func (c *BashCommand) needsConfirmation(command string) bool {
 	return false
 }
 
-// isDangerous 检查命令是否危险
+// isDangerous checks if the command is dangerous
 func (c *BashCommand) isDangerous(command string) bool {
 	// Check for write/modify operations
 	dangerousPrefixes := []string{
@@ -293,7 +293,7 @@ func (c *BashCommand) isDangerous(command string) bool {
 	return false
 }
 
-// askConfirmation 询问用户确认
+// askConfirmation asks the user for confirmation
 func (c *BashCommand) askConfirmation(command string) bool {
 	level := GetCurrentPermissionLevel()
 	info := PermissionLevelDetails[level]
@@ -313,7 +313,7 @@ func (c *BashCommand) askConfirmation(command string) bool {
 	return response == "y" || response == "yes"
 }
 
-// executeCommand 执行bash命令
+// executeCommand executes a bash command
 func (c *BashCommand) executeCommand(ctx context.Context, command string) error {
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
@@ -373,7 +373,7 @@ func (c *BashCommand) executeCommand(ctx context.Context, command string) error 
 	return nil
 }
 
-// handleSpecialCommand 处理特殊命令（cd, pwd等）
+// handleSpecialCommand handles special commands (cd, pwd, etc.)
 func (c *BashCommand) handleSpecialCommand(command string) (bool, error) {
 	parts := strings.Fields(command)
 	if len(parts) == 0 {
@@ -396,7 +396,7 @@ func (c *BashCommand) handleSpecialCommand(command string) (bool, error) {
 	}
 }
 
-// handleCd 处理cd命令
+// handleCd handles the cd command
 func (c *BashCommand) handleCd(parts []string) (bool, error) {
 	var dir string
 	if len(parts) < 2 {
@@ -427,7 +427,7 @@ func (c *BashCommand) handleCd(parts []string) (bool, error) {
 	return true, nil
 }
 
-// handlePwd 处理pwd命令
+// handlePwd handles the pwd command
 func (c *BashCommand) handlePwd() (bool, error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -437,7 +437,7 @@ func (c *BashCommand) handlePwd() (bool, error) {
 	return true, nil
 }
 
-// handleExit 处理exit/quit命令
+// handleExit handles exit/quit commands
 func (c *BashCommand) handleExit(parts []string) (bool, error) {
 	code := 0
 	if len(parts) > 1 {
@@ -447,18 +447,18 @@ func (c *BashCommand) handleExit(parts []string) (bool, error) {
 	return true, nil
 }
 
-// showHelp 显示帮助信息
+// showHelp shows help information
 func (c *BashCommand) showHelp() error {
 	fmt.Println(c.Help())
 	return nil
 }
 
-// SetDryRun 设置dry-run模式（用于测试）
+// SetDryRun sets dry-run mode (for testing)
 func (c *BashCommand) SetDryRun(dryRun bool) {
 	c.dryRun = dryRun
 }
 
-// SetTimeout 设置超时时间（用于测试）
+// SetTimeout sets the timeout (for testing)
 func (c *BashCommand) SetTimeout(timeout time.Duration) {
 	c.timeout = timeout
 }

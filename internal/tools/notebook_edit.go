@@ -1,6 +1,6 @@
-// Package tools 提供 NotebookEdit 工具
-// 来源: src/tools/NotebookEditTool/NotebookEditTool.ts (490行)
-// 重构: Go NotebookEdit 工具（完整实现）
+// Package tools provides NotebookEdit tool
+// Source: src/tools/NotebookEditTool/NotebookEditTool.ts (490 lines)
+// Refactored: Go NotebookEdit tool (complete implementation)
 package tools
 
 import (
@@ -11,30 +11,30 @@ import (
 	"time"
 )
 
-// NotebookEditTool Notebook 编辑工具
+// NotebookEditTool Notebook editing tool
 type NotebookEditTool struct{}
 
-// Name 返回工具名称
+// Name returns the tool name
 func (n *NotebookEditTool) Name() string {
 	return "notebook_edit"
 }
 
-// Description 返回工具描述
+// Description returns the tool description
 func (n *NotebookEditTool) Description() string {
 	return "Edit Jupyter Notebook files (.ipynb) - add, modify, or delete cells"
 }
 
-// IsReadOnly 是否只读
+// IsReadOnly returns whether the tool is read-only
 func (n *NotebookEditTool) IsReadOnly() bool {
 	return false
 }
 
-// IsDestructive 是否有破坏性
+// IsDestructive returns whether the tool is destructive
 func (n *NotebookEditTool) IsDestructive() bool {
 	return true
 }
 
-// InputSchema 输入参数模式
+// InputSchema returns the input parameter schema
 func (n *NotebookEditTool) InputSchema() json.RawMessage {
 	return json.RawMessage(`{
 		"type": "object",
@@ -70,7 +70,7 @@ func (n *NotebookEditTool) InputSchema() json.RawMessage {
 	}`)
 }
 
-// NotebookCell Notebook 单元格 (Jupyter format)
+// NotebookCell Notebook cell (Jupyter format)
 type NotebookCell struct {
 	ID             string                 `json:"id"`
 	CellType       string                 `json:"cell_type"`
@@ -80,7 +80,7 @@ type NotebookCell struct {
 	Outputs        []interface{}          `json:"outputs,omitempty"`
 }
 
-// NotebookContent Notebook 内容 (Jupyter format)
+// NotebookContent Notebook content (Jupyter format)
 type NotebookContent struct {
 	Cells         []NotebookCell         `json:"cells"`
 	Metadata      map[string]interface{} `json:"metadata"`
@@ -88,7 +88,7 @@ type NotebookContent struct {
 	NbformatMinor int                    `json:"nbformat_minor"`
 }
 
-// Call 执行工具
+// Call executes the tool
 func (n *NotebookEditTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
 	var params struct {
 		NotebookPath string `json:"notebook_path"`
@@ -319,7 +319,7 @@ func (n *NotebookEditTool) generateCellID() string {
 	return fmt.Sprintf("cell-%d", time.Now().UnixNano())
 }
 
-// RegisterNotebookEditTool 注册 NotebookEdit 工具到注册表
+// RegisterNotebookEditTool Register NotebookEdit tool to the registry
 func RegisterNotebookEditTool(registry *Registry) {
 	registry.Register(&NotebookEditTool{})
 }
