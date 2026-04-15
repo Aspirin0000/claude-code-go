@@ -13,6 +13,7 @@ import (
 // PlanCommand manages execution plans
 type PlanCommand struct {
 	*BaseCommand
+	getPlanFilePath func() string
 }
 
 // Plan represents an execution plan
@@ -40,6 +41,10 @@ func NewPlanCommand() *PlanCommand {
 			"Create or view execution plans",
 			CategoryAdvanced,
 		),
+		getPlanFilePath: func() string {
+			homeDir, _ := os.UserHomeDir()
+			return filepath.Join(homeDir, ".claude-code", "plan.json")
+		},
 	}
 	cmd.WithHelp(`Usage: /plan [description]
 
@@ -97,12 +102,6 @@ func (p *PlanCommand) Execute(ctx context.Context, args []string) error {
 		description := strings.Join(args, " ")
 		return p.createPlan(description)
 	}
-}
-
-// getPlanFilePath returns the path to the plan file
-func (p *PlanCommand) getPlanFilePath() string {
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".claude-code", "plan.json")
 }
 
 // loadPlan loads the current plan from disk

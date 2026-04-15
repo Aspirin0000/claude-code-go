@@ -38,13 +38,9 @@ Note: You'll need to edit ~/.config/claude/config.json to add your API key.`),
 
 // Execute executes the init command
 func (c *InitCommand) Execute(ctx context.Context, args []string) error {
-	// Get config directory
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return fmt.Errorf("failed to get config directory: %w", err)
-	}
-
-	claudeDir := filepath.Join(configDir, "claude")
+	// Use config.GetConfigPath for consistency and testability
+	configPath := config.GetConfigPath()
+	claudeDir := filepath.Dir(configPath)
 
 	// Create directory
 	if err := os.MkdirAll(claudeDir, 0755); err != nil {
@@ -54,7 +50,6 @@ func (c *InitCommand) Execute(ctx context.Context, args []string) error {
 	fmt.Printf("✅ Created directory: %s\n", claudeDir)
 
 	// Create sample config
-	configPath := filepath.Join(claudeDir, "config.json")
 
 	if _, err := os.Stat(configPath); err == nil {
 		fmt.Printf("⚠️  Config file already exists: %s\n", configPath)

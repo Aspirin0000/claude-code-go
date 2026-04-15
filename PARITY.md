@@ -465,8 +465,12 @@ All P0 items are now functional:
 41. ✅ Refactored tasks command to support file path injection for testing
 42. ✅ Added unit tests for config command (maskAPIKey, get/set, nested env)
 43. ✅ Added unit tests for status command (formatDuration, estimateTokensForText, execution)
-44. ✅ Added `CLAUDE_CONFIG_DIR` env var support for test-isolated config paths
-45. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+44. ✅ Added unit tests for plan command (create, add step, done, remove, clear)
+45. ✅ Added unit tests for review command (default, changes, plan, git, summary)
+46. ✅ Added unit tests for init command (create config, idempotent)
+47. ✅ Added `CLAUDE_CONFIG_DIR` env var support for test-isolated config paths
+48. ✅ Refactored plan and init commands for testability
+49. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
