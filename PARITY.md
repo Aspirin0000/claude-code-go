@@ -450,6 +450,8 @@ All P0 items are now functional:
 28. ✅ Implemented streaming text output in TUI with event-driven updates
 29. ✅ Added unit tests for save, resume, and session store commands
 30. ✅ Fixed analytics sink race condition panic
+31. ✅ Enhanced /doctor command with Docker, Python, Node, NPM, and Ripgrep checks
+32. ✅ Added doctor command unit tests
 
 ### Build Status
 - ✅ `go build ./...` - Success

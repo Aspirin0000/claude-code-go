@@ -52,6 +52,11 @@ func (c *DoctorCommand) Execute(ctx context.Context, args []string) error {
 	}{
 		{"Go Version", c.checkGoVersion},
 		{"Git Installation", c.checkGit},
+		{"Docker", c.checkDocker},
+		{"Python 3", c.checkPython},
+		{"Node.js", c.checkNode},
+		{"NPM", c.checkNPM},
+		{"Ripgrep", c.checkRipgrep},
 		{"API Key", c.checkAPIKey},
 		{"Anthropic API", c.checkAnthropicAPI},
 		{"Environment Variables", c.checkEnv},
@@ -97,6 +102,55 @@ func (c *DoctorCommand) checkGit() (bool, string) {
 		return false, "not installed"
 	}
 	return true, strings.TrimSpace(string(out))
+}
+
+func (c *DoctorCommand) checkDocker() (bool, string) {
+	cmd := exec.Command("docker", "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, "not installed"
+	}
+	return true, strings.TrimSpace(string(out))
+}
+
+func (c *DoctorCommand) checkPython() (bool, string) {
+	cmd := exec.Command("python3", "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, "not installed"
+	}
+	return true, strings.TrimSpace(string(out))
+}
+
+func (c *DoctorCommand) checkNode() (bool, string) {
+	cmd := exec.Command("node", "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, "not installed"
+	}
+	return true, strings.TrimSpace(string(out))
+}
+
+func (c *DoctorCommand) checkNPM() (bool, string) {
+	cmd := exec.Command("npm", "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, "not installed"
+	}
+	return true, strings.TrimSpace(string(out))
+}
+
+func (c *DoctorCommand) checkRipgrep() (bool, string) {
+	cmd := exec.Command("rg", "--version")
+	out, err := cmd.Output()
+	if err != nil {
+		return false, "not installed"
+	}
+	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	if len(lines) > 0 {
+		return true, lines[0]
+	}
+	return true, "installed"
 }
 
 func (c *DoctorCommand) checkAPIKey() (bool, string) {
