@@ -285,6 +285,19 @@ type ListResourcesResult struct {
 	Resources []ResourceInfo `json:"resources"`
 }
 
+// ReadResourceResult 资源读取结果
+type ReadResourceResult struct {
+	Contents []ResourceContent `json:"contents"`
+}
+
+// ResourceContent 资源内容
+type ResourceContent struct {
+	URI      string `json:"uri"`
+	MIMEType string `json:"mimeType,omitempty"`
+	Text     string `json:"text,omitempty"`
+	Blob     string `json:"blob,omitempty"`
+}
+
 // ListPromptsResult 提示列表结果
 // 对应 TS: ListPromptsResultSchema
 type ListPromptsResult struct {
@@ -794,6 +807,35 @@ func (c *MCPClient) GetResources() ([]ResourceInfo, error) {
 	}
 
 	return result.Resources, nil
+}
+
+// ReadResource reads a specific resource by URI
+func (c *MCPClient) ReadResource(uri string) (*ReadResourceResult, error) {
+	params := map[string]string{"uri": uri}
+	paramsData, _ := json.Marshal(params)
+
+	request := JSONRPCMessage{
+		JSONRPC: "2.0",
+		ID:      6,
+		Method:  "resources/read",
+		Params:  paramsData,
+	}
+
+	response, err := c.SendRequest(request)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.Error != nil {
+		return nil, response.Error
+	}
+
+	var result ReadResourceResult
+	if err := json.Unmarshal(response.Result, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse resource read result: %w", err)
+	}
+
+	return &result, nil
 }
 
 // GetPrompts 获取提示列表

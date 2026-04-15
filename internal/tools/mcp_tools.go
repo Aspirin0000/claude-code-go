@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+
+	"github.com/Aspirin0000/claude-code-go/internal/mcp"
 )
 
 // ListMcpResourcesTool lists available resources from MCP servers
@@ -38,27 +41,40 @@ func (t *ListMcpResourcesTool) Call(ctx context.Context, input json.RawMessage) 
 		return nil, fmt.Errorf("failed to parse parameters: %w", err)
 	}
 
-	// Get MCP manager instance (this would be set up during initialization)
-	// For now, return a placeholder response
-	result := struct {
-		Resources []McpResourceInfo `json:"resources"`
-		Count     int               `json:"count"`
-		Note      string            `json:"note"`
-	}{
-		Resources: []McpResourceInfo{},
-		Count:     0,
-		Note:      "MCP resource listing requires active MCP server connections. Use /mcp-list to see connected servers.",
+	manager := mcp.GetGlobalMCPManager()
+	connected := manager.GetConnectionManager().ListConnected()
+
+	if len(connected) == 0 {
+		return json.Marshal(map[string]interface{}{
+			"resources": []mcp.ResourceInfo{},
+			"count":     0,
+			"note":      "No MCP servers are currently connected. Use /mcp-list to check status and /mcp-add to configure servers.",
+		})
 	}
 
-	return json.Marshal(result)
-}
+	var allResources []mcp.ResourceInfo
+	for _, serverName := range connected {
+		if params.ServerName != "" && serverName != params.ServerName {
+			continue
+		}
 
-// McpResourceInfo represents an MCP resource
-type McpResourceInfo struct {
-	Name        string `json:"name"`
-	Server      string `json:"server"`
-	URI         string `json:"uri"`
-	Description string `json:"description,omitempty"`
+		client, exists := manager.GetConnectionManager().GetClient(serverName)
+		if !exists {
+			continue
+		}
+
+		resources, err := mcp.FetchResourcesForClient(client)
+		if err != nil {
+			continue
+		}
+		allResources = append(allResources, resources...)
+	}
+
+	return json.Marshal(map[string]interface{}{
+		"resources": allResources,
+		"count":     len(allResources),
+		"servers":   len(connected),
+	})
 }
 
 // ReadMcpResourceTool reads content from an MCP resource
@@ -95,18 +111,52 @@ func (t *ReadMcpResourceTool) Call(ctx context.Context, input json.RawMessage) (
 		return nil, fmt.Errorf("uri parameter is required")
 	}
 
-	// Placeholder implementation
-	result := struct {
-		URI     string `json:"uri"`
-		Content string `json:"content"`
-		Note    string `json:"note"`
-	}{
-		URI:     params.URI,
-		Content: "",
-		Note:    "MCP resource reading requires active MCP server connections. Configure MCP servers with /mcp-add.",
+	manager := mcp.GetGlobalMCPManager()
+	connected := manager.GetConnectionManager().ListConnected()
+
+	if len(connected) == 0 {
+		return json.Marshal(map[string]interface{}{
+			"uri":     params.URI,
+			"content": "",
+			"note":    "No MCP servers are currently connected.",
+		})
 	}
 
-	return json.Marshal(result)
+	// Try each connected server to read the resource
+	var lastErr error
+	for _, serverName := range connected {
+		client, exists := manager.GetConnectionManager().GetClient(serverName)
+		if !exists {
+			continue
+		}
+
+		result, err := client.ReadResource(params.URI)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		var contentParts []string
+		for _, c := range result.Contents {
+			if c.Text != "" {
+				contentParts = append(contentParts, c.Text)
+			}
+		}
+
+		return json.Marshal(map[string]interface{}{
+			"uri":      params.URI,
+			"server":   serverName,
+			"content":  strings.Join(contentParts, "\n"),
+			"mimeType": result.Contents[0].MIMEType,
+		})
+	}
+
+	errMsg := "Resource not found on any connected server"
+	if lastErr != nil {
+		errMsg = fmt.Sprintf("%s: %v", errMsg, lastErr)
+	}
+
+	return nil, fmt.Errorf("%s", errMsg)
 }
 
 // McpTool calls a tool on an MCP server
@@ -140,9 +190,9 @@ func (t *McpTool) InputSchema() json.RawMessage {
 
 func (t *McpTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
 	var params struct {
-		ServerName string          `json:"server_name"`
-		ToolName   string          `json:"tool_name"`
-		Arguments  json.RawMessage `json:"arguments,omitempty"`
+		ServerName string                 `json:"server_name"`
+		ToolName   string                 `json:"tool_name"`
+		Arguments  map[string]interface{} `json:"arguments,omitempty"`
 	}
 
 	if err := json.Unmarshal(input, &params); err != nil {
@@ -153,20 +203,31 @@ func (t *McpTool) Call(ctx context.Context, input json.RawMessage) (json.RawMess
 		return nil, fmt.Errorf("server_name and tool_name are required")
 	}
 
-	// Placeholder implementation
-	result := struct {
-		ServerName string `json:"server_name"`
-		ToolName   string `json:"tool_name"`
-		Success    bool   `json:"success"`
-		Note       string `json:"note"`
-	}{
-		ServerName: params.ServerName,
-		ToolName:   params.ToolName,
-		Success:    false,
-		Note:       "MCP tool execution requires configured MCP servers. Use /mcp-add to add servers, then /mcp-list to verify connection.",
+	manager := mcp.GetGlobalMCPManager()
+
+	// Construct full tool name: mcp__<server>__<tool>
+	fullToolName := fmt.Sprintf("mcp__%s__%s", params.ServerName, params.ToolName)
+
+	result, err := manager.ExecuteTool(ctx, fullToolName, params.Arguments)
+	if err != nil {
+		return nil, fmt.Errorf("tool execution failed: %w", err)
 	}
 
-	return json.Marshal(result)
+	// Format result content
+	var contentParts []string
+	for _, block := range result.Content {
+		if block.Text != "" {
+			contentParts = append(contentParts, block.Text)
+		}
+	}
+
+	return json.Marshal(map[string]interface{}{
+		"server_name": params.ServerName,
+		"tool_name":   params.ToolName,
+		"success":     !result.IsError,
+		"content":     strings.Join(contentParts, "\n"),
+		"is_error":    result.IsError,
+	})
 }
 
 func init() {
