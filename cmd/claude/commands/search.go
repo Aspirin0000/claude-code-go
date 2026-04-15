@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Aspirin0000/claude-code-go/internal/state"
 )
@@ -43,9 +44,10 @@ func (c *SearchCommand) Execute(ctx context.Context, args []string) error {
 	messages := state.GlobalState.GetMessages()
 
 	var matches []struct {
-		Index   int
-		Role    string
-		Content string
+		Index     int
+		Role      string
+		Content   string
+		Timestamp time.Time
 	}
 
 	for i, msg := range messages {
@@ -66,13 +68,15 @@ func (c *SearchCommand) Execute(ctx context.Context, args []string) error {
 				role = msg.Type
 			}
 			matches = append(matches, struct {
-				Index   int
-				Role    string
-				Content string
+				Index     int
+				Role      string
+				Content   string
+				Timestamp time.Time
 			}{
-				Index:   i + 1,
-				Role:    role,
-				Content: content,
+				Index:     i + 1,
+				Role:      role,
+				Content:   content,
+				Timestamp: msg.Timestamp,
 			})
 		}
 	}
@@ -97,7 +101,11 @@ func (c *SearchCommand) Execute(ctx context.Context, args []string) error {
 		if len(preview) > 120 {
 			preview = preview[:117] + "..."
 		}
-		fmt.Printf("%s [#%d %s]: %s\n", roleIcon, m.Index, capitalize(m.Role), preview)
+		timeStr := ""
+		if !m.Timestamp.IsZero() {
+			timeStr = "(" + m.Timestamp.Format("15:04") + ") "
+		}
+		fmt.Printf("%s [#%d %s] %s%s\n", roleIcon, m.Index, capitalize(m.Role), timeStr, preview)
 	}
 	fmt.Println()
 	return nil

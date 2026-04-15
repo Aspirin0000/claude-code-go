@@ -464,6 +464,7 @@ var (
 	helpStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true)
 	statusBarStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA")).Background(lipgloss.Color("#1a1a2e")).Padding(0, 1)
 	dividerStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
+	timestampStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true)
 )
 
 // App TUI application model
@@ -860,12 +861,16 @@ func (a *App) View() string {
 
 	for i := startIdx; i < len(messages); i++ {
 		msg := messages[i]
+		timestampStr := ""
+		if !msg.Timestamp.IsZero() {
+			timestampStr = timestampStyle.Render(msg.Timestamp.Format("15:04")) + " "
+		}
 		switch msg.Role {
 		case "user":
 			if msg.Content == "" && len(msg.Blocks) > 0 {
-				b.WriteString(userStyle.Render("You: ") + "[tool results]")
+				b.WriteString(timestampStr + userStyle.Render("You: ") + "[tool results]")
 			} else {
-				b.WriteString(userStyle.Render("You: ") + msg.Content)
+				b.WriteString(timestampStr + userStyle.Render("You: ") + msg.Content)
 			}
 		case "assistant":
 			content := msg.Content
@@ -885,9 +890,9 @@ func (a *App) View() string {
 					}
 				}
 			}
-			b.WriteString(assistantStyle.Render("Claude: ") + content)
+			b.WriteString(timestampStr + assistantStyle.Render("Claude: ") + content)
 		case "system":
-			b.WriteString(systemStyle.Render(msg.Content))
+			b.WriteString(timestampStr + systemStyle.Render(msg.Content))
 		}
 		b.WriteString("\n\n")
 	}

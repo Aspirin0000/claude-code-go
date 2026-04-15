@@ -301,8 +301,9 @@ Evidence: `internal/types/`
 - Error handling and recovery
 - ✅ JSON mode (`--json`) for structured input/output
 - ✅ HTTP server mode (`--serve`) with /chat, /health, /tools endpoints
-- ✅ TUI status bar with model name and message count
+- ✅ TUI status bar with model name, message count, and timestamps
 - ✅ Streaming text output in REPL and TUI via `CLAUDE_STREAM=1`
+- ✅ Message timestamps in conversation state, TUI, save/export, and search
 
 ### Missing
 - ❌ Structured IO
@@ -455,6 +456,7 @@ All P0 items are now functional:
 32. ✅ Added doctor command unit tests
 33. ✅ Added `/search` command to search conversation history
 34. ✅ Added sessions command unit tests
+35. ✅ Added message timestamps to conversation state (auto-set in `AddMessage`, displayed in TUI, included in save/export and search)
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -463,4 +465,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-15 (all 56 tools complete + CI/CD + Hooks)*
+*Last Updated: 2026-04-15 (timestamps feature + all 56 tools complete + CI/CD + Hooks)*

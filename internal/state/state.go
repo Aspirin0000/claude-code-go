@@ -4,6 +4,7 @@ package state
 import (
 	"encoding/json"
 	"sync"
+	"time"
 )
 
 // ContentBlock represents a structured content block for multi-turn tool use.
@@ -19,11 +20,12 @@ type ContentBlock struct {
 
 // Message represents a conversation message.
 type Message struct {
-	UUID    string
-	Type    string // user, assistant, system
-	Role    string
-	Content string
-	Blocks  []ContentBlock
+	UUID      string
+	Type      string // user, assistant, system
+	Role      string
+	Content   string
+	Blocks    []ContentBlock
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // AppState holds the global application state.
@@ -51,6 +53,9 @@ func NewAppState() *AppState {
 func (s *AppState) AddMessage(msg Message) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if msg.Timestamp.IsZero() {
+		msg.Timestamp = time.Now()
+	}
 	s.Messages = append(s.Messages, msg)
 }
 

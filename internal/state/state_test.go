@@ -2,6 +2,7 @@ package state
 
 import (
 	"testing"
+	"time"
 )
 
 func TestAppStateAddAndGetMessages(t *testing.T) {
@@ -97,5 +98,61 @@ func TestAppStateConcurrency(t *testing.T) {
 func TestGlobalStateExists(t *testing.T) {
 	if GlobalState == nil {
 		t.Error("GlobalState should be initialized")
+	}
+}
+
+func TestAddMessageAutoSetsTimestamp(t *testing.T) {
+	s := NewAppState()
+	msg := Message{Type: "user", Content: "hello"}
+	if !msg.Timestamp.IsZero() {
+		t.Fatal("test setup: expected zero timestamp")
+	}
+
+	s.AddMessage(msg)
+	msgs := s.GetMessages()
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+	if msgs[0].Timestamp.IsZero() {
+		t.Error("expected timestamp to be auto-set, got zero")
+	}
+	if time.Since(msgs[0].Timestamp) > time.Second {
+		t.Error("auto-set timestamp seems too old")
+	}
+}
+
+func TestAddMessagePreservesExistingTimestamp(t *testing.T) {
+	s := NewAppState()
+	customTime := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	msg := Message{Type: "assistant", Content: "hi", Timestamp: customTime}
+
+	s.AddMessage(msg)
+	msgs := s.GetMessages()
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+	if !msgs[0].Timestamp.Equal(customTime) {
+		t.Errorf("expected timestamp %v, got %v", customTime, msgs[0].Timestamp)
+	}
+}
+
+func TestGetMessagesIncludesTimestamps(t *testing.T) {
+	s := NewAppState()
+	t1 := time.Date(2024, 6, 1, 12, 0, 0, 0, time.UTC)
+	t2 := time.Date(2024, 6, 1, 12, 5, 0, 0, time.UTC)
+	s.SetMessages([]Message{
+		{Type: "user", Content: "hello", Timestamp: t1},
+		{Type: "assistant", Content: "world", Timestamp: t2},
+	})
+
+	msgs := s.GetMessages()
+	if len(msgs) != 2 {
+		t.Fatalf("expected 2 messages, got %d", len(msgs))
+	}
+	if !msgs[0].Timestamp.Equal(t1) {
+		t.Errorf("expected first timestamp %v, got %v", t1, msgs[0].Timestamp)
+	}
+	if !msgs[1].Timestamp.Equal(t2) {
+		t.Errorf("expected second timestamp %v, got %v", t2, msgs[1].Timestamp)
 	}
 }

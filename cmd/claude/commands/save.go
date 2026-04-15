@@ -162,15 +162,36 @@ func (s *SaveCommand) exportAsMarkdown(messages []state.Message) ([]byte, error)
 			role = "unknown"
 		}
 
+		timestampStr := ""
+		if !msg.Timestamp.IsZero() {
+			timestampStr = msg.Timestamp.Format("2006-01-02 15:04:05")
+		}
+
 		switch role {
 		case "user":
-			md.WriteString(fmt.Sprintf("## User\n\n%s\n\n", msg.Content))
+			if timestampStr != "" {
+				md.WriteString(fmt.Sprintf("## User (%s)\n\n%s\n\n", timestampStr, msg.Content))
+			} else {
+				md.WriteString(fmt.Sprintf("## User\n\n%s\n\n", msg.Content))
+			}
 		case "assistant":
-			md.WriteString(fmt.Sprintf("## Assistant\n\n%s\n\n", msg.Content))
+			if timestampStr != "" {
+				md.WriteString(fmt.Sprintf("## Assistant (%s)\n\n%s\n\n", timestampStr, msg.Content))
+			} else {
+				md.WriteString(fmt.Sprintf("## Assistant\n\n%s\n\n", msg.Content))
+			}
 		case "system":
-			md.WriteString(fmt.Sprintf("## System\n\n%s\n\n", msg.Content))
+			if timestampStr != "" {
+				md.WriteString(fmt.Sprintf("## System (%s)\n\n%s\n\n", timestampStr, msg.Content))
+			} else {
+				md.WriteString(fmt.Sprintf("## System\n\n%s\n\n", msg.Content))
+			}
 		default:
-			md.WriteString(fmt.Sprintf("## %s\n\n%s\n\n", capitalize(role), msg.Content))
+			if timestampStr != "" {
+				md.WriteString(fmt.Sprintf("## %s (%s)\n\n%s\n\n", capitalize(role), timestampStr, msg.Content))
+			} else {
+				md.WriteString(fmt.Sprintf("## %s\n\n%s\n\n", capitalize(role), msg.Content))
+			}
 		}
 	}
 
