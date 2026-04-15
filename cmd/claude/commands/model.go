@@ -302,13 +302,19 @@ func (c *ModelCommand) getCurrentModel() string {
 
 // formatNumber formats a number with thousands separators
 func formatNumber(n int) string {
+	if n < 0 {
+		return "-" + formatNumber(-n)
+	}
 	if n < 1000 {
 		return fmt.Sprintf("%d", n)
 	}
 	if n < 1000000 {
 		return fmt.Sprintf("%d,%03d", n/1000, n%1000)
 	}
-	return fmt.Sprintf("%d,%03d,%03d", n/1000000, (n%1000000)/1000, n%1000)
+	if n < 1000000000 {
+		return fmt.Sprintf("%d,%03d,%03d", n/1000000, (n%1000000)/1000, n%1000)
+	}
+	return fmt.Sprintf("%d,%03d,%03d,%03d", n/1000000000, (n%1000000000)/1000000, (n%1000000)/1000, n%1000)
 }
 
 func init() {

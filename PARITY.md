@@ -457,6 +457,10 @@ All P0 items are now functional:
 33. ✅ Added `/search` command to search conversation history
 34. ✅ Added sessions command unit tests
 35. ✅ Added message timestamps to conversation state (auto-set in `AddMessage`, displayed in TUI, included in save/export and search)
+36. ✅ Added unit tests for permissions logic (`IsToolAllowed`, `GetAllowedTools`, `GetToolsNeedingAsk`)
+37. ✅ Added unit tests for model command (`formatNumber`, model lookup, switching)
+38. ✅ Added unit tests for cost command (`calculateCostTokens`, execution)
+39. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
