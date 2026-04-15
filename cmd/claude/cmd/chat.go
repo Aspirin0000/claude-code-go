@@ -454,18 +454,46 @@ func buildAPIMessagesFromState() []api.Message {
 	return apiMessages
 }
 
-// Styles
-var (
-	titleStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7D56F4")).Background(lipgloss.Color("#1a1a2e")).Padding(1, 2).Width(50)
-	userStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF88")).Bold(true)
-	assistantStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#00CCFF"))
-	systemStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF6B6B"))
-	inputStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#2d2d44")).Padding(0, 1)
-	helpStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true)
-	statusBarStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA")).Background(lipgloss.Color("#1a1a2e")).Padding(0, 1)
-	dividerStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
-	timestampStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true)
-)
+// Styles holds all TUI styles for a given theme
+type styles struct {
+	titleStyle     lipgloss.Style
+	userStyle      lipgloss.Style
+	assistantStyle lipgloss.Style
+	systemStyle    lipgloss.Style
+	inputStyle     lipgloss.Style
+	helpStyle      lipgloss.Style
+	statusBarStyle lipgloss.Style
+	dividerStyle   lipgloss.Style
+	timestampStyle lipgloss.Style
+}
+
+func newStyles(theme string) *styles {
+	if theme == "light" {
+		return &styles{
+			titleStyle:     lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#5A3FC0")).Background(lipgloss.Color("#F0F0F5")).Padding(1, 2).Width(50),
+			userStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#008844")).Bold(true),
+			assistantStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#0066AA")),
+			systemStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#CC4444")),
+			inputStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#222222")).Background(lipgloss.Color("#E8E8EE")).Padding(0, 1),
+			helpStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#777777")).Italic(true),
+			statusBarStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#555555")).Background(lipgloss.Color("#F0F0F5")).Padding(0, 1),
+			dividerStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#CCCCCC")),
+			timestampStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")).Italic(true),
+		}
+	}
+	// default dark theme
+	return &styles{
+		titleStyle:     lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7D56F4")).Background(lipgloss.Color("#1a1a2e")).Padding(1, 2).Width(50),
+		userStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF88")).Bold(true),
+		assistantStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#00CCFF")),
+		systemStyle:    lipgloss.NewStyle().Foreground(lipgloss.Color("#FF6B6B")),
+		inputStyle:     lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#2d2d44")).Padding(0, 1),
+		helpStyle:      lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true),
+		statusBarStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA")).Background(lipgloss.Color("#1a1a2e")).Padding(0, 1),
+		dividerStyle:   lipgloss.NewStyle().Foreground(lipgloss.Color("#444444")),
+		timestampStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true),
+	}
+}
 
 // App TUI application model
 type App struct {
@@ -479,6 +507,7 @@ type App struct {
 	loading      bool
 	width        int
 	height       int
+	styles       *styles
 	// streaming state
 	streamingText string
 	streamBlocks  []api.ContentBlock
@@ -761,6 +790,7 @@ func NewApp() *App {
 		config:       cfg,
 		apiClient:    client,
 		toolRegistry: tools.NewDefaultRegistry(),
+		styles:       newStyles(cfg.Theme),
 	}
 }
 
@@ -857,7 +887,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (a *App) View() string {
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render("🚀 Claude Code Go " + commands.TargetVersion))
+	b.WriteString(a.styles.titleStyle.Render("🚀 Claude Code Go " + commands.TargetVersion))
 	b.WriteString("\n")
 
 	// Status bar
@@ -870,9 +900,9 @@ func (a *App) View() string {
 	if a.scrollOffset > 0 {
 		statusText += fmt.Sprintf("| Scroll: %d ", a.scrollOffset)
 	}
-	b.WriteString(statusBarStyle.Render(statusText))
+	b.WriteString(a.styles.statusBarStyle.Render(statusText))
 	b.WriteString("\n")
-	b.WriteString(dividerStyle.Render(strings.Repeat("─", a.width)))
+	b.WriteString(a.styles.dividerStyle.Render(strings.Repeat("─", a.width)))
 	b.WriteString("\n\n")
 
 	visibleCount := a.height - 12
@@ -888,14 +918,14 @@ func (a *App) View() string {
 		msg := messages[i]
 		timestampStr := ""
 		if !msg.Timestamp.IsZero() {
-			timestampStr = timestampStyle.Render(msg.Timestamp.Format("15:04")) + " "
+			timestampStr = a.styles.timestampStyle.Render(msg.Timestamp.Format("15:04")) + " "
 		}
 		switch msg.Role {
 		case "user":
 			if msg.Content == "" && len(msg.Blocks) > 0 {
-				b.WriteString(timestampStr + userStyle.Render("You: ") + "[tool results]")
+				b.WriteString(timestampStr + a.styles.userStyle.Render("You: ") + "[tool results]")
 			} else {
-				b.WriteString(timestampStr + userStyle.Render("You: ") + msg.Content)
+				b.WriteString(timestampStr + a.styles.userStyle.Render("You: ") + msg.Content)
 			}
 		case "assistant":
 			content := msg.Content
@@ -915,35 +945,27 @@ func (a *App) View() string {
 					}
 				}
 			}
-			b.WriteString(timestampStr + assistantStyle.Render("Claude: ") + content)
+			b.WriteString(timestampStr + a.styles.assistantStyle.Render("Claude: ") + content)
 		case "system":
-			b.WriteString(timestampStr + systemStyle.Render(msg.Content))
+			b.WriteString(timestampStr + a.styles.systemStyle.Render(msg.Content))
 		}
 		b.WriteString("\n\n")
 	}
 
-	if a.loading {
-		b.WriteString(assistantStyle.Render("Thinking... ⏳") + "\n\n")
+	if a.loading && a.streamingText == "" {
+		b.WriteString(a.styles.assistantStyle.Render("Thinking... ⏳") + "\n\n")
 	}
 
-	b.WriteString(dividerStyle.Render(strings.Repeat("─", a.width)))
-	b.WriteString("\n")
-	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
-	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
 	// Show streaming text preview if active
 	if a.loading && a.streamingText != "" {
-		b.WriteString(assistantStyle.Render("Claude: ") + a.streamingText + "▌")
+		b.WriteString(a.styles.assistantStyle.Render("Claude: ") + a.streamingText + "▌")
 		b.WriteString("\n\n")
 	}
 
-	if a.loading && a.streamingText == "" {
-		b.WriteString(assistantStyle.Render("Thinking... ⏳") + "\n\n")
-	}
-
-	b.WriteString(dividerStyle.Render(strings.Repeat("─", a.width)))
+	b.WriteString(a.styles.dividerStyle.Render(strings.Repeat("─", a.width)))
 	b.WriteString("\n")
-	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
-	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
+	b.WriteString(a.styles.inputStyle.Render("> "+a.input+"█") + "\n")
+	b.WriteString(a.styles.helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
 	return b.String()
 }
 

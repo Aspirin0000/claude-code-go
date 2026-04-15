@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **31 slash commands** fully implemented and tested
+- **~39 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -210,18 +210,22 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/init` - Initialize configuration
 - ✅ `/doctor` - System diagnostics
 
-#### Session Management (5)
+#### Session Management (7)
 - ✅ `/compact` - Compress conversation history (with AI summarization)
 - ✅ `/resume` - Resume historical session
 - ✅ `/save` - Save session to file
 - ✅ `/load` - Load session from file
 - ✅ `/history` - Show conversation history summary
+- ✅ `/reset` - Clear conversation history
+- ✅ `/context` - Show AI conversation context
 
-#### Configuration Management (4)
+#### Configuration Management (6)
 - ✅ `/config` - Configuration management
 - ✅ `/model` - Switch AI model
+- ✅ `/theme` - Switch TUI color theme (light/dark)
 - ✅ `/permissions` - Permission level management
 - ✅ `/reload` - Reload configuration from disk
+- ✅ `/login` / `/logout` - API key management
 
 #### MCP Management (4)
 - ✅ `/mcp` - MCP server management
@@ -235,7 +239,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/grep` - File content search
 - ✅ `/glob` - File pattern matching
 
-#### Advanced Commands (8)
+#### Advanced Commands (10)
 - ✅ `/plan` - Create execution plans
 - ✅ `/review` - Review code changes
 - ✅ `/tasks` - Task management
@@ -244,8 +248,10 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/cost` - Cost tracking
 - ✅ `/diff` - Git diff viewing
 - ✅ `/search` (/find, /grep-history) - Search conversation history
+- ✅ `/skills` - Reusable prompt templates
+- ✅ `/copy` - Copy last assistant message to clipboard
 
-**Status:** 32 commands implemented (focused on core functionality)
+**Status:** ~39 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -498,6 +504,11 @@ All P0 items are now functional:
 74. ✅ Added copy command tests (with/without assistant message, empty messages)
 75. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
 76. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+77. ✅ Refactored TUI styles from package-level vars into `App.styles` with `newStyles(theme)` constructor
+78. ✅ Added light/dark theme color palettes for the TUI
+79. ✅ Fixed `View()` duplication bug in `chat.go`
+80. ✅ Implemented `/theme` command to switch and persist TUI themes
+81. ✅ Added theme command tests (show current, switch, same theme, invalid, env override)
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -506,4 +517,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-15 (timestamps feature + all 56 tools complete + CI/CD + Hooks)*
+*Last Updated: 2026-04-15 (theme support + TUI refactor + ~39 commands + all 56 tools complete)*
