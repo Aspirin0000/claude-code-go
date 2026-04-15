@@ -32,6 +32,7 @@ var (
 	modelFlag   string
 	verboseFlag bool
 	promptFlag  string
+	jsonFlag    bool
 )
 
 func init() {
@@ -39,6 +40,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&modelFlag, "model", "", "AI model to use")
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
 	rootCmd.Flags().StringVarP(&promptFlag, "prompt", "p", "", "Initial prompt to send")
+	rootCmd.Flags().BoolVar(&jsonFlag, "json", false, "Run in structured JSON mode")
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -65,6 +67,10 @@ func Execute() error {
 
 // runCLI runs the CLI interface (either TUI or simple REPL)
 func runCLI() error {
+	if jsonFlag {
+		return runJSONMode()
+	}
+
 	if promptFlag != "" {
 		return runSingleShot(promptFlag)
 	}
@@ -462,6 +468,184 @@ func runSingleShot(prompt string) error {
 
 func runPipeMode(input string) error {
 	return runSingleShot(input)
+}
+
+// JSONRequest is the input format for --json mode.
+type JSONRequest struct {
+	Prompt    string `json:"prompt"`
+	System    string `json:"system,omitempty"`
+	MaxRounds int    `json:"max_rounds,omitempty"`
+}
+
+// JSONToolCall represents a tool invocation in JSON mode output.
+type JSONToolCall struct {
+	Name   string          `json:"name"`
+	Input  json.RawMessage `json:"input"`
+	Result string          `json:"result,omitempty"`
+	Error  string          `json:"error,omitempty"`
+}
+
+// JSONMessage represents a conversation message in JSON mode output.
+type JSONMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// JSONResponse is the output format for --json mode.
+type JSONResponse struct {
+	Success   bool           `json:"success"`
+	Response  string         `json:"response,omitempty"`
+	Messages  []JSONMessage  `json:"messages,omitempty"`
+	ToolCalls []JSONToolCall `json:"tool_calls,omitempty"`
+	Error     string         `json:"error,omitempty"`
+}
+
+func runJSONMode() error {
+	app := NewApp()
+	if app.apiClient == nil {
+		return outputJSON(JSONResponse{Success: false, Error: "AI client not initialized; please configure API key"})
+	}
+
+	var req JSONRequest
+	stdinInfo, err := os.Stdin.Stat()
+	if err == nil && (stdinInfo.Mode()&os.ModeCharDevice) == 0 {
+		data, readErr := io.ReadAll(os.Stdin)
+		if readErr != nil {
+			return outputJSON(JSONResponse{Success: false, Error: readErr.Error()})
+		}
+		if err := json.Unmarshal(data, &req); err != nil {
+			return outputJSON(JSONResponse{Success: false, Error: "invalid JSON input: " + err.Error()})
+		}
+	} else if promptFlag != "" {
+		req.Prompt = promptFlag
+	}
+
+	if req.Prompt == "" {
+		return outputJSON(JSONResponse{Success: false, Error: "missing prompt in JSON input"})
+	}
+	if req.MaxRounds <= 0 {
+		req.MaxRounds = 10
+	}
+
+	if req.System != "" {
+		state.GlobalState.AddMessage(state.Message{
+			Role:    "system",
+			Type:    "system",
+			Content: req.System,
+		})
+	}
+
+	state.GlobalState.AddMessage(state.Message{
+		Role:    "user",
+		Type:    "user",
+		Content: req.Prompt,
+	})
+
+	analytics.LogEvent("chat_message_sent", analytics.LogEventMetadata{
+		"mode": "json",
+	})
+
+	toolsList := buildToolsList(app.toolRegistry)
+	var toolCalls []JSONToolCall
+	var finalResponse string
+
+	ctx := context.WithValue(context.Background(), tools.APIClientContextKey, app.apiClient)
+
+	for round := 0; round < req.MaxRounds; round++ {
+		apiMessages := buildAPIMessagesFromState()
+		resp, err := app.apiClient.ChatWithBlocks(ctx, apiMessages, toolsList)
+		if err != nil {
+			return outputJSON(JSONResponse{Success: false, Error: err.Error(), ToolCalls: toolCalls})
+		}
+
+		var textParts []string
+		var toolUses []api.ContentBlock
+		for _, block := range resp.Content {
+			switch block.Type {
+			case "text":
+				textParts = append(textParts, block.Text)
+			case "tool_use":
+				toolUses = append(toolUses, block)
+			}
+		}
+
+		assistantContent := strings.Join(textParts, "\n")
+		assistantBlocks := make([]state.ContentBlock, len(resp.Content))
+		for i, b := range resp.Content {
+			assistantBlocks[i] = state.ContentBlock{
+				Type:      b.Type,
+				Text:      b.Text,
+				ID:        b.ID,
+				Name:      b.Name,
+				Input:     b.Input,
+				ToolUseID: b.ToolUseID,
+			}
+		}
+		state.GlobalState.AddMessage(state.Message{
+			Type:    "assistant",
+			Role:    "assistant",
+			Content: assistantContent,
+			Blocks:  assistantBlocks,
+		})
+
+		if len(toolUses) == 0 {
+			finalResponse = assistantContent
+			break
+		}
+
+		for _, block := range toolUses {
+			resultText, err := executeTool(ctx, app.toolRegistry, block.Name, block.Input)
+			call := JSONToolCall{Name: block.Name, Input: block.Input}
+			if err != nil {
+				call.Error = err.Error()
+				resultText = fmt.Sprintf("Error: %v", err)
+			} else {
+				call.Result = resultText
+			}
+			toolCalls = append(toolCalls, call)
+
+			state.GlobalState.AddMessage(state.Message{
+				Type: "user",
+				Role: "user",
+				Blocks: []state.ContentBlock{
+					{
+						Type:      "tool_result",
+						ToolUseID: block.ID,
+						Content:   resultText,
+					},
+				},
+			})
+		}
+	}
+
+	messages := state.GlobalState.GetMessages()
+	jsonMessages := make([]JSONMessage, 0, len(messages))
+	for _, msg := range messages {
+		if msg.Type == "system" || msg.Role == "system" {
+			continue
+		}
+		if msg.Role == "user" && msg.Content == "" && len(msg.Blocks) > 0 {
+			// tool results skip content summary to keep output clean
+			continue
+		}
+		jsonMessages = append(jsonMessages, JSONMessage{
+			Role:    msg.Role,
+			Content: msg.Content,
+		})
+	}
+
+	return outputJSON(JSONResponse{
+		Success:   true,
+		Response:  finalResponse,
+		Messages:  jsonMessages,
+		ToolCalls: toolCalls,
+	})
+}
+
+func outputJSON(resp JSONResponse) error {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	return enc.Encode(resp)
 }
 
 func NewApp() *App {

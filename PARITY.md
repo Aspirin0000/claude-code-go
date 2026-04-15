@@ -298,13 +298,13 @@ Evidence: `internal/types/`
 - Session persistence (save/load)
 - Configuration management
 - Error handling and recovery
+- ✅ JSON mode (`--json`) for structured input/output
 
 ### Missing
 - ❌ Structured IO
 - ❌ Remote transport layer
-- ❌ JSON mode
 
-**Status:** 70% complete (core functionality working)
+**Status:** 75% complete (core functionality working)
 
 ---
 
@@ -438,6 +438,7 @@ All P0 items are now functional:
 19. ✅ Implemented Hooks system with sync/async execution and REPL/TUI integration
 20. ✅ Added GitHub Actions CI/CD workflow
 21. ✅ Implemented analytics/telemetry with FileSink and ConsoleSink
+22. ✅ Added `--json` flag for structured JSON input/output mode
 
 ### Build Status
 - ✅ `go build ./...` - Success

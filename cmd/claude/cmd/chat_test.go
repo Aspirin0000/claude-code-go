@@ -129,3 +129,45 @@ func TestBuildAPIMessagesFromState_RoleFallback(t *testing.T) {
 		t.Errorf("expected role fallback to type, got %s", apiMessages[0].Role)
 	}
 }
+
+func TestJSONRequestParsing(t *testing.T) {
+	input := []byte(`{"prompt":"hello","system":"be helpful","max_rounds":5}`)
+	var req JSONRequest
+	if err := json.Unmarshal(input, &req); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+	if req.Prompt != "hello" {
+		t.Errorf("unexpected prompt: %s", req.Prompt)
+	}
+	if req.System != "be helpful" {
+		t.Errorf("unexpected system: %s", req.System)
+	}
+	if req.MaxRounds != 5 {
+		t.Errorf("unexpected max_rounds: %d", req.MaxRounds)
+	}
+}
+
+func TestJSONResponseSerialization(t *testing.T) {
+	resp := JSONResponse{
+		Success:  true,
+		Response: "hello",
+		Messages: []JSONMessage{
+			{Role: "user", Content: "hi"},
+			{Role: "assistant", Content: "hello"},
+		},
+		ToolCalls: []JSONToolCall{
+			{Name: "bash", Input: json.RawMessage(`{"command":"ls"}`), Result: "file.txt"},
+		},
+	}
+	data, err := json.Marshal(resp)
+	if err != nil {
+		t.Fatalf("failed to marshal: %v", err)
+	}
+	var parsed JSONResponse
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+	if !parsed.Success || parsed.Response != "hello" || len(parsed.Messages) != 2 || len(parsed.ToolCalls) != 1 {
+		t.Errorf("unexpected parsed response: %+v", parsed)
+	}
+}
