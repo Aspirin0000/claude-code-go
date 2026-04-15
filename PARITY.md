@@ -473,8 +473,9 @@ All P0 items are now functional:
 49. ✅ Added unit tests for bash command (parseArgs, validateCommand, isDangerous, dryRun, execution)
 50. ✅ Added unit tests for diff command (default, staged, specific file)
 51. ✅ Added unit tests for load command (JSON, Markdown, auto-detect, validation)
-52. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-53. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+52. ✅ Added unit tests for git command (IsGitRepo, branch, log, diff, status, remote)
+53. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+54. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
