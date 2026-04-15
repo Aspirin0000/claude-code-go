@@ -448,7 +448,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC:
+		case tea.KeyCtrlC, tea.KeyEsc:
 			return a, tea.Quit
 		case tea.KeyEnter:
 			if a.input != "" && !a.loading {
@@ -543,7 +543,7 @@ func (a *App) View() string {
 	}
 
 	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
-	b.WriteString(helpStyle.Render("Ctrl+C: Exit | Enter: Send"))
+	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History"))
 	return b.String()
 }
 
