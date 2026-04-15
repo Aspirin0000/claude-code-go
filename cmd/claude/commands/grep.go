@@ -34,28 +34,19 @@ func NewGrepCommand() *GrepCommand {
 			"grep",
 			"Search file contents with regex support",
 			CategoryTools,
-		).WithAliases("search", "find").
-			WithHelp(`Usage: /grep <pattern> [path]
-       /grep -i <pattern> [path]
-       /grep -r <pattern> [path]
+		).WithAliases("grep-files").
+			WithHelp(`Usage: /grep [options] <pattern> [path]
 
 Search file contents using regular expressions.
-
-Arguments:
-  <pattern>  Regex pattern to search for
-  [path]     Directory or file to search (default: current directory)
 
 Options:
   -i    Case-insensitive search
   -r    Recursive search (search subdirectories)
 
 Examples:
-  /grep "func.*main"           Search for main functions in current directory
+  /grep "function" ./src           Search for "function" in ./src
   /grep -i "error" ./src       Case-insensitive search in ./src
-  /grep -r "config|settings" . Recursive search for configuration terms
-  /grep "^package" *.go        Search in Go files only
-
-Aliases: /search, /find`),
+  /grep -r "config|settings" . Recursive search for configuration terms`),
 		defaultLimit: 50,
 	}
 }

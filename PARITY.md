@@ -232,10 +232,10 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 #### Tool Commands (4)
 - ✅ `/bash` (/sh) - Execute bash commands
 - ✅ `/git` (/g) - Git operations
-- ✅ `/grep` (/search) - File content search
+- ✅ `/grep` - File content search
 - ✅ `/glob` - File pattern matching
 
-#### Advanced Commands (7)
+#### Advanced Commands (8)
 - ✅ `/plan` - Create execution plans
 - ✅ `/review` - Review code changes
 - ✅ `/tasks` - Task management
@@ -243,8 +243,9 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/memory` - Session memory
 - ✅ `/cost` - Cost tracking
 - ✅ `/diff` - Git diff viewing
+- ✅ `/search` (/find, /grep-history) - Search conversation history
 
-**Status:** 31 commands implemented (focused on core functionality)
+**Status:** 32 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -452,6 +453,8 @@ All P0 items are now functional:
 30. ✅ Fixed analytics sink race condition panic
 31. ✅ Enhanced /doctor command with Docker, Python, Node, NPM, and Ripgrep checks
 32. ✅ Added doctor command unit tests
+33. ✅ Added `/search` command to search conversation history
+34. ✅ Added sessions command unit tests
 
 ### Build Status
 - ✅ `go build ./...` - Success
