@@ -299,6 +299,7 @@ Evidence: `internal/types/`
 - Configuration management
 - Error handling and recovery
 - ✅ JSON mode (`--json`) for structured input/output
+- ✅ TUI status bar with model name and message count
 
 ### Missing
 - ❌ Structured IO
@@ -439,6 +440,7 @@ All P0 items are now functional:
 20. ✅ Added GitHub Actions CI/CD workflow
 21. ✅ Implemented analytics/telemetry with FileSink and ConsoleSink
 22. ✅ Added `--json` flag for structured JSON input/output mode
+23. ✅ Enhanced TUI with status bar and visual dividers
 
 ### Build Status
 - ✅ `go build ./...` - Success

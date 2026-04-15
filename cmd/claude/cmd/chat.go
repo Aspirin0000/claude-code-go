@@ -433,6 +433,8 @@ var (
 	systemStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF6B6B"))
 	inputStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#2d2d44")).Padding(0, 1)
 	helpStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Italic(true)
+	statusBarStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#AAAAAA")).Background(lipgloss.Color("#1a1a2e")).Padding(0, 1)
+	dividerStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#444444"))
 )
 
 // App TUI application model
@@ -767,10 +769,24 @@ func (a *App) View() string {
 	var b strings.Builder
 
 	b.WriteString(titleStyle.Render("🚀 Claude Code Go " + commands.TargetVersion))
+	b.WriteString("\n")
+
+	// Status bar
+	modelName := a.config.Model
+	if modelName == "" {
+		modelName = "default"
+	}
+	messages := state.GlobalState.GetMessages()
+	statusText := fmt.Sprintf(" Model: %s | Messages: %d ", modelName, len(messages))
+	if a.scrollOffset > 0 {
+		statusText += fmt.Sprintf("| Scroll: %d ", a.scrollOffset)
+	}
+	b.WriteString(statusBarStyle.Render(statusText))
+	b.WriteString("\n")
+	b.WriteString(dividerStyle.Render(strings.Repeat("─", a.width)))
 	b.WriteString("\n\n")
 
-	messages := state.GlobalState.GetMessages()
-	visibleCount := a.height - 10
+	visibleCount := a.height - 12
 	startIdx := 0
 	if len(messages) > visibleCount {
 		startIdx = len(messages) - visibleCount - a.scrollOffset
@@ -817,6 +833,8 @@ func (a *App) View() string {
 		b.WriteString(assistantStyle.Render("Thinking... ⏳") + "\n\n")
 	}
 
+	b.WriteString(dividerStyle.Render(strings.Repeat("─", a.width)))
+	b.WriteString("\n")
 	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
 	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
 	return b.String()
