@@ -460,3 +460,32 @@ func TestGitCheckoutTool(t *testing.T) {
 		t.Errorf("expected success, got: %s", parsed.Output)
 	}
 }
+
+func TestGitAddTool(t *testing.T) {
+	tool := &GitAddTool{}
+	tmpDir := t.TempDir()
+	exec.Command("git", "init", tmpDir).Run()
+	os.WriteFile(filepath.Join(tmpDir, "new.txt"), []byte("new"), 0644)
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":  tmpDir,
+		"files": []string{"new.txt"},
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+
+	if !parsed.Success {
+		t.Errorf("expected success, got: %s", parsed.Output)
+	}
+}

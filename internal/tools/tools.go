@@ -1204,6 +1204,64 @@ func (g *GitCheckoutTool) Call(ctx context.Context, input json.RawMessage) (json
 	return json.Marshal(result)
 }
 
+// GitAddTool Git add tool
+type GitAddTool struct{}
+
+func (g *GitAddTool) Name() string        { return "git_add" }
+func (g *GitAddTool) Description() string { return "Stage files for git commit" }
+func (g *GitAddTool) IsReadOnly() bool    { return false }
+func (g *GitAddTool) IsDestructive() bool { return false }
+
+func (g *GitAddTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"files": {"type": "array", "items": {"type": "string"}, "description": "Files to stage (default: [\".\"])"}
+		}
+	}`)
+}
+
+func (g *GitAddTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path  string   `json:"path"`
+		Files []string `json:"files"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	repoPath := params.Path
+	if repoPath == "" {
+		repoPath = "."
+	}
+	files := params.Files
+	if len(files) == 0 {
+		files = []string{"."}
+	}
+
+	args := append([]string{"-C", repoPath, "add"}, files...)
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Path    string `json:"path"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+		Path:    repoPath,
+	}
+
+	if err != nil {
+		result.Error = err.Error()
+	}
+
+	return json.Marshal(result)
+}
+
 // NewDefaultRegistry creates a registry with the default tools
 func NewDefaultRegistry() *Registry {
 	registry := NewRegistry()
@@ -1228,6 +1286,7 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&GitCommitTool{})
 	registry.Register(&GitBranchTool{})
 	registry.Register(&GitCheckoutTool{})
+	registry.Register(&GitAddTool{})
 
 	// Extended tools
 	registry.Register(&DirectoryReadTool{})
