@@ -840,7 +840,6 @@ func (f *FileMoveTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	})
 }
 
-
 // HttpRequestTool HTTP request tool
 type HttpRequestTool struct{}
 
@@ -968,6 +967,9 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&GitPullTool{})
 	registry.Register(&GitResetTool{})
 	registry.Register(&GitStashTool{})
+	registry.Register(&GitRemoteTool{})
+	registry.Register(&GitMergeTool{})
+	registry.Register(&GitShowTool{})
 	registry.Register(&HttpRequestTool{})
 
 	// Extended tools

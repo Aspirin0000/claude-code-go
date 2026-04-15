@@ -681,3 +681,194 @@ func (g *GitStashTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	}
 	return json.Marshal(result)
 }
+
+// GitRemoteTool Git remote tool
+type GitRemoteTool struct{}
+
+func (g *GitRemoteTool) Name() string        { return "git_remote" }
+func (g *GitRemoteTool) Description() string { return "List, add, or remove git remotes" }
+func (g *GitRemoteTool) IsReadOnly() bool    { return true }
+func (g *GitRemoteTool) IsDestructive() bool { return false }
+
+func (g *GitRemoteTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"action": {"type": "string", "enum": ["list", "add", "remove"], "description": "Remote action"},
+			"name": {"type": "string", "description": "Remote name"},
+			"url": {"type": "string", "description": "Remote URL (for add)"}
+		},
+		"required": ["action"]
+	}`)
+}
+
+func (g *GitRemoteTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path   string `json:"path"`
+		Action string `json:"action"`
+		Name   string `json:"name"`
+		URL    string `json:"url"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	repoPath := params.Path
+	if repoPath == "" {
+		repoPath = "."
+	}
+
+	args := []string{"-C", repoPath, "remote"}
+	if params.Action == "add" {
+		args = append(args, "add", params.Name, params.URL)
+	} else if params.Action == "remove" {
+		args = append(args, "remove", params.Name)
+	} else {
+		args = append(args, "-v")
+	}
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Path    string `json:"path"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+		Path:    repoPath,
+	}
+	if err != nil {
+		result.Error = err.Error()
+	}
+	return json.Marshal(result)
+}
+
+// GitMergeTool Git merge tool
+type GitMergeTool struct{}
+
+func (g *GitMergeTool) Name() string        { return "git_merge" }
+func (g *GitMergeTool) Description() string { return "Merge a branch into the current branch" }
+func (g *GitMergeTool) IsReadOnly() bool    { return false }
+func (g *GitMergeTool) IsDestructive() bool { return false }
+
+func (g *GitMergeTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"branch": {"type": "string", "description": "Branch to merge"},
+			"message": {"type": "string", "description": "Merge commit message"},
+			"squash": {"type": "boolean", "description": "Squash merge"}
+		},
+		"required": ["branch"]
+	}`)
+}
+
+func (g *GitMergeTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path    string `json:"path"`
+		Branch  string `json:"branch"`
+		Message string `json:"message"`
+		Squash  bool   `json:"squash"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	repoPath := params.Path
+	if repoPath == "" {
+		repoPath = "."
+	}
+
+	args := []string{"-C", repoPath, "merge"}
+	if params.Squash {
+		args = append(args, "--squash")
+	}
+	if params.Message != "" {
+		args = append(args, "-m", params.Message)
+	}
+	args = append(args, params.Branch)
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+		Path    string `json:"path"`
+		Error   string `json:"error,omitempty"`
+	}{
+		Success: err == nil,
+		Output:  string(output),
+		Path:    repoPath,
+	}
+	if err != nil {
+		result.Error = err.Error()
+	}
+	return json.Marshal(result)
+}
+
+// GitShowTool Git show tool
+type GitShowTool struct{}
+
+func (g *GitShowTool) Name() string        { return "git_show" }
+func (g *GitShowTool) Description() string { return "Show details of a git commit" }
+func (g *GitShowTool) IsReadOnly() bool    { return true }
+func (g *GitShowTool) IsDestructive() bool { return false }
+
+func (g *GitShowTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Repository path (default: current directory)"},
+			"commit": {"type": "string", "description": "Commit hash or reference (default: HEAD)"},
+			"stat": {"type": "boolean", "description": "Show diffstat"}
+		}
+	}`)
+}
+
+func (g *GitShowTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path   string `json:"path"`
+		Commit string `json:"commit"`
+		Stat   bool   `json:"stat"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	repoPath := params.Path
+	if repoPath == "" {
+		repoPath = "."
+	}
+	commit := params.Commit
+	if commit == "" {
+		commit = "HEAD"
+	}
+
+	args := []string{"-C", repoPath, "show"}
+	if params.Stat {
+		args = append(args, "--stat")
+	}
+	args = append(args, commit)
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	output, err := cmd.CombinedOutput()
+
+	result := struct {
+		Output string `json:"output"`
+		Path   string `json:"path"`
+		Error  string `json:"error,omitempty"`
+	}{
+		Output: string(output),
+		Path:   repoPath,
+	}
+	if err != nil {
+		result.Error = err.Error()
+	}
+	return json.Marshal(result)
+}

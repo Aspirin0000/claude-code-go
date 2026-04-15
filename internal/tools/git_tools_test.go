@@ -310,3 +310,95 @@ func TestGitStashTool(t *testing.T) {
 	}
 }
 
+func TestGitRemoteTool(t *testing.T) {
+	tool := &GitRemoteTool{}
+	tmpDir := t.TempDir()
+	exec.Command("git", "init", tmpDir).Run()
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":   tmpDir,
+		"action": "list",
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Output string `json:"output"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	// No remotes yet, output should be empty or contain a message
+}
+
+func TestGitMergeTool(t *testing.T) {
+	tool := &GitMergeTool{}
+	tmpDir := t.TempDir()
+	exec.Command("git", "init", tmpDir).Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
+	os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("main"), 0644)
+	exec.Command("git", "-C", tmpDir, "add", "file.txt").Run()
+	exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run()
+	exec.Command("git", "-C", tmpDir, "checkout", "-b", "feature").Run()
+	os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("feature"), 0644)
+	exec.Command("git", "-C", tmpDir, "add", "file.txt").Run()
+	exec.Command("git", "-C", tmpDir, "commit", "-m", "feature commit").Run()
+	exec.Command("git", "-C", tmpDir, "checkout", "main").Run()
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":   tmpDir,
+		"branch": "feature",
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Success bool   `json:"success"`
+		Output  string `json:"output"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	if !parsed.Success {
+		t.Errorf("expected success, got: %s", parsed.Output)
+	}
+}
+
+func TestGitShowTool(t *testing.T) {
+	tool := &GitShowTool{}
+	tmpDir := t.TempDir()
+	exec.Command("git", "init", tmpDir).Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.email", "test@test.com").Run()
+	exec.Command("git", "-C", tmpDir, "config", "user.name", "Test").Run()
+	os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("content"), 0644)
+	exec.Command("git", "-C", tmpDir, "add", "file.txt").Run()
+	exec.Command("git", "-C", tmpDir, "commit", "-m", "init").Run()
+
+	input, _ := json.Marshal(map[string]interface{}{
+		"path":   tmpDir,
+		"commit": "HEAD",
+		"stat":   true,
+	})
+
+	result, err := tool.Call(context.Background(), input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var parsed struct {
+		Output string `json:"output"`
+	}
+	if err := json.Unmarshal(result, &parsed); err != nil {
+		t.Fatalf("failed to unmarshal result: %v", err)
+	}
+	if parsed.Output == "" {
+		t.Error("expected non-empty output")
+	}
+}
