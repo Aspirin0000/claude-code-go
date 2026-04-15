@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -508,6 +509,48 @@ func ExchangeCodeForToken(config *OAuthConfig, code string) (*OAuthToken, error)
 	return token, nil
 }
 
+// PerformOAuthFlow 执行完整的 OAuth 授权流程
+func PerformOAuthFlow(config *OAuthConfig) (*OAuthToken, error) {
+	state := GenerateState()
+	authURL, err := BuildAuthorizationURL(config, state)
+	if err != nil {
+		return nil, err
+	}
+
+	// Open browser
+	openBrowser(authURL)
+
+	// Start callback server
+	result, err := StartOAuthCallbackServer(config.CallbackPort, state)
+	if err != nil {
+		return nil, err
+	}
+
+	// Exchange code for token
+	token, err := ExchangeCodeForToken(config, result.Code)
+	if err != nil {
+		return nil, err
+	}
+
+	return token, nil
+}
+
+func openBrowser(url string) {
+	var cmd string
+	var args []string
+	switch os := os.Getenv("GOOS"); os {
+	case "darwin":
+		cmd = "open"
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start"}
+	default:
+		cmd = "xdg-open"
+	}
+	args = append(args, url)
+	exec.Command(cmd, args...).Start()
+}
+
 // joinScopes 将范围数组连接成空格分隔的字符串
 func joinScopes(scopes []string) string {
 	result := ""
@@ -518,6 +561,69 @@ func joinScopes(scopes []string) string {
 		result += scope
 	}
 	return result
+}
+
+// OAuthCallbackResult 回调结果
+type OAuthCallbackResult struct {
+	Code  string
+	State string
+	Error string
+}
+
+// StartOAuthCallbackServer 启动本地 OAuth 回调服务器
+func StartOAuthCallbackServer(port int, expectedState string) (*OAuthCallbackResult, error) {
+	result := make(chan *OAuthCallbackResult, 1)
+	mux := http.NewServeMux()
+	server := &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: mux}
+
+	mux.HandleFunc("/oauth/callback", func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		state := r.URL.Query().Get("state")
+		errMsg := r.URL.Query().Get("error")
+
+		if errMsg != "" {
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<html><body><h2>Authentication Failed</h2><p>You can close this window.</p></body></html>"))
+			result <- &OAuthCallbackResult{Error: errMsg}
+			return
+		}
+
+		if code == "" {
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<html><body><h2>Authentication Failed</h2><p>No authorization code received. You can close this window.</p></body></html>"))
+			result <- &OAuthCallbackResult{Error: "missing authorization code"}
+			return
+		}
+
+		if expectedState != "" && state != expectedState {
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte("<html><body><h2>Authentication Failed</h2><p>Invalid state parameter. You can close this window.</p></body></html>"))
+			result <- &OAuthCallbackResult{Error: "invalid state"}
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte("<html><body><h2>Authentication Successful</h2><p>You can close this window and return to Claude Code.</p></body></html>"))
+		result <- &OAuthCallbackResult{Code: code, State: state}
+	})
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			result <- &OAuthCallbackResult{Error: err.Error()}
+		}
+	}()
+
+	select {
+	case res := <-result:
+		server.Close()
+		if res.Error != "" {
+			return nil, fmt.Errorf("oauth callback error: %s", res.Error)
+		}
+		return res, nil
+	case <-time.After(5 * time.Minute):
+		server.Close()
+		return nil, fmt.Errorf("oauth callback timeout")
+	}
 }
 
 // GenerateState 生成随机的 state 参数

@@ -5,8 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -425,6 +430,139 @@ func (t *TodoWriteTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	return json.Marshal(result)
 }
 
+// DirectoryReadTool Directory listing tool
+type DirectoryReadTool struct{}
+
+func (d *DirectoryReadTool) Name() string        { return "dir_read" }
+func (d *DirectoryReadTool) Description() string { return "List files and directories" }
+func (d *DirectoryReadTool) IsReadOnly() bool    { return true }
+func (d *DirectoryReadTool) IsDestructive() bool { return false }
+
+func (d *DirectoryReadTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"path": {"type": "string", "description": "Directory path to list"},
+			"recursive": {"type": "boolean", "description": "List recursively"}
+		},
+		"required": ["path"]
+	}`)
+}
+
+func (d *DirectoryReadTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Path      string `json:"path"`
+		Recursive bool   `json:"recursive"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+
+	info, err := os.Stat(params.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat path: %w", err)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("path is not a directory: %s", params.Path)
+	}
+
+	type Entry struct {
+		Name    string `json:"name"`
+		IsDir   bool   `json:"is_dir"`
+		Size    int64  `json:"size"`
+		ModTime string `json:"mod_time"`
+	}
+
+	var entries []Entry
+	if params.Recursive {
+		err = filepath.Walk(params.Path, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if path == params.Path {
+				return nil
+			}
+			rel, _ := filepath.Rel(params.Path, path)
+			entries = append(entries, Entry{
+				Name:    rel,
+				IsDir:   info.IsDir(),
+				Size:    info.Size(),
+				ModTime: info.ModTime().Format(time.RFC3339),
+			})
+			return nil
+		})
+	} else {
+		items, err := os.ReadDir(params.Path)
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range items {
+			info, _ := item.Info()
+			size := int64(0)
+			modTime := ""
+			if info != nil {
+				size = info.Size()
+				modTime = info.ModTime().Format(time.RFC3339)
+			}
+			entries = append(entries, Entry{
+				Name:    item.Name(),
+				IsDir:   item.IsDir(),
+				Size:    size,
+				ModTime: modTime,
+			})
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(struct {
+		Entries []Entry `json:"entries"`
+		Path    string  `json:"path"`
+		Count   int     `json:"count"`
+	}{
+		Entries: entries,
+		Path:    params.Path,
+		Count:   len(entries),
+	})
+}
+
+// ThinkTool Reasoning tool
+type ThinkTool struct{}
+
+func (t *ThinkTool) Name() string { return "think" }
+func (t *ThinkTool) Description() string {
+	return "Use this tool to think through complex problems step by step before taking action"
+}
+func (t *ThinkTool) IsReadOnly() bool    { return true }
+func (t *ThinkTool) IsDestructive() bool { return false }
+
+func (t *ThinkTool) InputSchema() json.RawMessage {
+	return json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"thought": {"type": "string", "description": "Your step-by-step reasoning"}
+		},
+		"required": ["thought"]
+	}`)
+}
+
+func (t *ThinkTool) Call(ctx context.Context, input json.RawMessage) (json.RawMessage, error) {
+	var params struct {
+		Thought string `json:"thought"`
+	}
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
+	}
+	return json.Marshal(struct {
+		Status  string `json:"status"`
+		Thought string `json:"thought"`
+	}{
+		Status:  "ok",
+		Thought: params.Thought,
+	})
+}
+
 // WebSearchTool Web search tool
 type WebSearchTool struct{}
 
@@ -447,20 +585,93 @@ func (w *WebSearchTool) Call(ctx context.Context, input json.RawMessage) (json.R
 	var params struct {
 		Query string `json:"query"`
 	}
-	_ = json.Unmarshal(input, &params)
-
-	// Web search implementation - requires a search engine API key
-	result := struct {
-		Results []string `json:"results"`
-		Query   string   `json:"query"`
-		Note    string   `json:"note"`
-	}{
-		Results: []string{},
-		Query:   params.Query,
-		Note:    "Web search requires a search engine API key. Use the web_fetch tool to retrieve content from a known URL directly.",
+	if err := json.Unmarshal(input, &params); err != nil {
+		return nil, err
 	}
 
-	return json.Marshal(result)
+	searchURL := "https://html.duckduckgo.com/html/?q=" + url.QueryEscape(params.Query)
+	req, err := http.NewRequestWithContext(ctx, "GET", searchURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("search request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	type SearchResult struct {
+		Title   string `json:"title"`
+		URL     string `json:"url"`
+		Snippet string `json:"snippet"`
+	}
+
+	var results []SearchResult
+
+	// Parse DuckDuckGo HTML results
+	re := regexp.MustCompile(`<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>(.*?)</a>`)
+	matches := re.FindAllStringSubmatch(string(body), -1)
+
+	snippetRe := regexp.MustCompile(`<a[^>]*class="result__snippet"[^>]*>(.*?)</a>`)
+	snippetMatches := snippetRe.FindAllStringSubmatch(string(body), -1)
+
+	for i, m := range matches {
+		if i >= 10 {
+			break
+		}
+		title := regexp.MustCompile(`<[^>]+>`).ReplaceAllString(m[2], "")
+		snippet := ""
+		if i < len(snippetMatches) {
+			snippet = regexp.MustCompile(`<[^>]+>`).ReplaceAllString(snippetMatches[i][1], "")
+		}
+		results = append(results, SearchResult{
+			Title:   strings.TrimSpace(title),
+			URL:     strings.TrimSpace(m[1]),
+			Snippet: strings.TrimSpace(snippet),
+		})
+	}
+
+	if len(results) == 0 {
+		// Fallback: try lite.duckduckgo.com
+		liteURL := "https://lite.duckduckgo.com/lite/?q=" + url.QueryEscape(params.Query)
+		req2, _ := http.NewRequestWithContext(ctx, "GET", liteURL, nil)
+		req2.Header.Set("User-Agent", "Mozilla/5.0")
+		resp2, err2 := client.Do(req2)
+		if err2 == nil {
+			defer resp2.Body.Close()
+			body2, _ := io.ReadAll(resp2.Body)
+			liteRe := regexp.MustCompile(`<a[^>]*class="result-link"[^>]*href="([^"]+)"[^>]*>(.*?)</a>`)
+			liteMatches := liteRe.FindAllStringSubmatch(string(body2), -1)
+			for i, m := range liteMatches {
+				if i >= 10 {
+					break
+				}
+				title := regexp.MustCompile(`<[^>]+>`).ReplaceAllString(m[2], "")
+				results = append(results, SearchResult{
+					Title: strings.TrimSpace(title),
+					URL:   strings.TrimSpace(m[1]),
+				})
+			}
+		}
+	}
+
+	return json.Marshal(struct {
+		Results []SearchResult `json:"results"`
+		Query   string         `json:"query"`
+		Count   int            `json:"count"`
+	}{
+		Results: results,
+		Query:   params.Query,
+		Count:   len(results),
+	})
 }
 
 // WebFetchTool Web fetch tool
@@ -522,8 +733,10 @@ func NewDefaultRegistry() *Registry {
 	registry.Register(&TodoWriteTool{})
 	registry.Register(&WebSearchTool{})
 	registry.Register(&WebFetchTool{})
+	registry.Register(&ThinkTool{})
 
 	// Extended tools
+	registry.Register(&DirectoryReadTool{})
 	registry.Register(&NotebookEditTool{})
 	registry.Register(&TaskGetTool{})
 	registry.Register(&TaskCreateTool{})
