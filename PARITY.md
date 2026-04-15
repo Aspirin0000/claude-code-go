@@ -299,11 +299,12 @@ Evidence: `internal/types/`
 - Configuration management
 - Error handling and recovery
 - ✅ JSON mode (`--json`) for structured input/output
+- ✅ HTTP server mode (`--serve`) with /chat, /health, /tools endpoints
 - ✅ TUI status bar with model name and message count
 
 ### Missing
 - ❌ Structured IO
-- ❌ Remote transport layer
+- ⚠️ Remote transport layer (HTTP server mode implemented locally)
 
 **Status:** 75% complete (core functionality working)
 
@@ -442,6 +443,7 @@ All P0 items are now functional:
 22. ✅ Added `--json` flag for structured JSON input/output mode
 23. ✅ Enhanced TUI with status bar and visual dividers
 24. ✅ Added exponential backoff retry to API client for transient failures
+25. ✅ Implemented HTTP server mode (`--serve`) with /chat, /health, /tools endpoints
 
 ### Build Status
 - ✅ `go build ./...` - Success

@@ -33,6 +33,8 @@ var (
 	verboseFlag bool
 	promptFlag  string
 	jsonFlag    bool
+	serveFlag   bool
+	portFlag    string
 )
 
 func init() {
@@ -41,6 +43,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verboseFlag, "verbose", "v", false, "Enable verbose output")
 	rootCmd.Flags().StringVarP(&promptFlag, "prompt", "p", "", "Initial prompt to send")
 	rootCmd.Flags().BoolVar(&jsonFlag, "json", false, "Run in structured JSON mode")
+	rootCmd.Flags().BoolVar(&serveFlag, "serve", false, "Run HTTP server mode")
+	rootCmd.Flags().StringVar(&portFlag, "port", "8080", "HTTP server port (used with --serve)")
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -67,6 +71,10 @@ func Execute() error {
 
 // runCLI runs the CLI interface (either TUI or simple REPL)
 func runCLI() error {
+	if serveFlag {
+		return runServer(portFlag)
+	}
+
 	if jsonFlag {
 		return runJSONMode()
 	}
