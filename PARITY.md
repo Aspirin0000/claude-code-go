@@ -470,7 +470,11 @@ All P0 items are now functional:
 46. ✅ Added unit tests for init command (create config, idempotent)
 47. ✅ Added `CLAUDE_CONFIG_DIR` env var support for test-isolated config paths
 48. ✅ Refactored plan and init commands for testability
-49. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+49. ✅ Added unit tests for bash command (parseArgs, validateCommand, isDangerous, dryRun, execution)
+50. ✅ Added unit tests for diff command (default, staged, specific file)
+51. ✅ Added unit tests for load command (JSON, Markdown, auto-detect, validation)
+52. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+53. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success

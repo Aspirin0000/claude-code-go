@@ -127,6 +127,12 @@ func TestModelCommandSwitchToSameModel(t *testing.T) {
 	cmd := NewModelCommand()
 	ctx := context.Background()
 
+	// Use isolated config to avoid affecting real config
+	tmpDir := t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", tmpDir)
+	cp := config.GetConfigPath()
+	_ = config.DefaultConfig().Save(cp)
+
 	// Switch to the model currently set in env/config
 	current := cmd.getCurrentModel()
 	if err := cmd.Execute(ctx, []string{current}); err != nil {
@@ -138,6 +144,12 @@ func TestModelCommandInvalidPartialMatch(t *testing.T) {
 	cmd := NewModelCommand()
 	ctx := context.Background()
 
+	// Use isolated config to avoid affecting real config
+	tmpDir := t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", tmpDir)
+	cp := config.GetConfigPath()
+	_ = config.DefaultConfig().Save(cp)
+
 	// An arbitrary unknown model ID should be accepted (custom model support)
 	if err := cmd.Execute(ctx, []string{"custom-unknown-model-v99"}); err != nil {
 		t.Fatalf("switch to custom model should succeed: %v", err)
@@ -148,10 +160,15 @@ func TestModelCommandPartialMatch(t *testing.T) {
 	cmd := NewModelCommand()
 	ctx := context.Background()
 
+	// Use isolated config to avoid affecting real config
+	tmpDir := t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", tmpDir)
+	cp := config.GetConfigPath()
+	cfg := config.DefaultConfig()
+	cfg.Model = "claude-3-haiku-20240307"
+	_ = cfg.Save(cp)
+
 	// "sonnet" should match one of the sonnet models
-	// We can't easily verify the exact match without config injection,
-	// but we can verify it doesn't error
-	t.Setenv("CLAUDE_CODE_MODEL", "claude-3-haiku-20240307")
 	if err := cmd.Execute(ctx, []string{"sonnet"}); err != nil {
 		t.Fatalf("partial match failed: %v", err)
 	}
