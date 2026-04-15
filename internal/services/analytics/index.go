@@ -4,6 +4,7 @@
 package analytics
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -193,23 +194,21 @@ func NewConsoleSink(prefix string) *ConsoleSink {
 // LogEvent logs event to console
 func (c *ConsoleSink) LogEvent(eventName string, metadata LogEventMetadata) {
 	timestamp := time.Now().Format(time.RFC3339)
-	if c.prefix != "" {
-		// Structured logging format
-		metadataStr := ""
-		for k, v := range metadata {
-			if metadataStr != "" {
-				metadataStr += ", "
-			}
-			metadataStr += k + "=" + formatValue(v)
-		}
-		if metadataStr != "" {
-			metadataStr = " " + metadataStr
-		}
-		// Use fmt or log package would be better, but keeping simple for now
-		_ = timestamp
-		_ = eventName
-		_ = metadataStr
+	prefix := c.prefix
+	if prefix == "" {
+		prefix = "[Analytics]"
 	}
+	metadataStr := ""
+	for k, v := range metadata {
+		if metadataStr != "" {
+			metadataStr += ", "
+		}
+		metadataStr += k + "=" + formatValue(v)
+	}
+	if metadataStr != "" {
+		metadataStr = " " + metadataStr
+	}
+	fmt.Printf("%s %s %s%s\n", prefix, timestamp, eventName, metadataStr)
 }
 
 // LogEventAsync logs event asynchronously to console

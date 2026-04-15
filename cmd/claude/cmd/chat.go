@@ -377,6 +377,7 @@ type App struct {
 	input        string
 	inputHistory []string
 	historyIndex int
+	scrollOffset int
 	loading      bool
 	width        int
 	height       int
@@ -475,6 +476,13 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					a.input = ""
 				}
 			}
+		case tea.KeyPgUp:
+			a.scrollOffset += 3
+		case tea.KeyPgDown:
+			a.scrollOffset -= 3
+			if a.scrollOffset < 0 {
+				a.scrollOffset = 0
+			}
 		}
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
@@ -488,6 +496,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			})
 		}
 		a.input = ""
+		a.scrollOffset = 0
 	}
 	return a, nil
 }
@@ -499,9 +508,13 @@ func (a *App) View() string {
 	b.WriteString("\n\n")
 
 	messages := state.GlobalState.GetMessages()
+	visibleCount := a.height - 10
 	startIdx := 0
-	if len(messages) > a.height-10 {
-		startIdx = len(messages) - (a.height - 10)
+	if len(messages) > visibleCount {
+		startIdx = len(messages) - visibleCount - a.scrollOffset
+		if startIdx < 0 {
+			startIdx = 0
+		}
 	}
 
 	for i := startIdx; i < len(messages); i++ {
@@ -543,7 +556,7 @@ func (a *App) View() string {
 	}
 
 	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
-	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History"))
+	b.WriteString(helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
 	return b.String()
 }
 
