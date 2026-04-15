@@ -481,8 +481,10 @@ All P0 items are now functional:
 57. ✅ Implemented `/login` command to save Anthropic API key to config
 58. ✅ Implemented `/logout` command to clear saved API key from config
 59. ✅ Added login/logout command tests with CLAUDE_CONFIG_DIR isolation
-60. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
-61. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
+60. ✅ Implemented `/skills` command to manage reusable prompt templates
+61. ✅ Added skills command tests (add, show, use, edit, remove, validation)
+62. ✅ Fixed model tests to use isolated config directories via CLAUDE_CONFIG_DIR
+63. ✅ Fixed `formatNumber` bug for numbers >= 1 billion
 
 ### Build Status
 - ✅ `go build ./...` - Success
