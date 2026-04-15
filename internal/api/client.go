@@ -1,4 +1,4 @@
-// Package api 提供 Claude API 客户端
+// Package api provides a Claude API client.
 package api
 
 import (
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// Client API 客户端
+// Client is an API client.
 type Client struct {
 	apiKey     string
 	baseURL    string
@@ -21,20 +21,20 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// Message 消息类型
+// Message represents a chat message.
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-// Tool 工具定义
+// Tool defines an available tool.
 type Tool struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description"`
 	InputSchema json.RawMessage `json:"input_schema"`
 }
 
-// ContentBlock 内容块
+// ContentBlock represents a block in the API response.
 type ContentBlock struct {
 	Type  string          `json:"type"`
 	Text  string          `json:"text,omitempty"`
@@ -43,13 +43,13 @@ type ContentBlock struct {
 	Input json.RawMessage `json:"input,omitempty"`
 }
 
-// Response API 响应
+// Response is an API response.
 type Response struct {
 	Role    string         `json:"role"`
 	Content []ContentBlock `json:"content"`
 }
 
-// StreamEvent 流式事件
+// StreamEvent is a streaming event.
 type StreamEvent struct {
 	Type    string `json:"type"`
 	Delta   Delta  `json:"delta,omitempty"`
@@ -57,13 +57,13 @@ type StreamEvent struct {
 	Index   int    `json:"index,omitempty"`
 }
 
-// Delta 增量内容
+// Delta is streamed delta content.
 type Delta struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
 }
 
-// NewClient 创建新的 API 客户端
+// NewClient creates a new API client.
 func NewClient(apiKey, model string) *Client {
 	return &Client{
 		apiKey:  apiKey,
@@ -75,9 +75,9 @@ func NewClient(apiKey, model string) *Client {
 	}
 }
 
-// ChatWithBlocks 发送聊天请求并返回内容块
+// ChatWithBlocks sends a chat request and returns content blocks.
 func (c *Client) ChatWithBlocks(ctx context.Context, messages []Message, tools []Tool) (*Response, error) {
-	// 构建请求体
+	// Build request body.
 	type toolDef struct {
 		Name        string          `json:"name"`
 		Description string          `json:"description"`
@@ -106,7 +106,7 @@ func (c *Client) ChatWithBlocks(ctx context.Context, messages []Message, tools [
 			Content: []ContentBlock{
 				{
 					Type: "text",
-					Text: "⚠️ 未配置 API Key。请在 ~/.config/claude/config.json 中设置 api_key。",
+					Text: "⚠️ API key is not configured. Set api_key in ~/.config/claude/config.json.",
 				},
 			},
 		}, nil
@@ -145,22 +145,22 @@ func (c *Client) ChatWithBlocks(ctx context.Context, messages []Message, tools [
 	return &result, nil
 }
 
-// Chat 发送聊天请求（兼容旧接口）
+// Chat sends a chat request using the legacy message interface.
 func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*Message, error) {
 	resp, err := c.ChatWithBlocks(ctx, messages, tools)
 	if err != nil {
 		return nil, err
 	}
 
-	// 构建响应消息文本
+	// Build response message text.
 	var content strings.Builder
 	for _, block := range resp.Content {
 		switch block.Type {
 		case "text":
 			content.WriteString(block.Text)
 		case "tool_use":
-			content.WriteString(fmt.Sprintf("\n🔧 调用工具: %s\n", block.Name))
-			content.WriteString(fmt.Sprintf("参数: %s\n", string(block.Input)))
+			content.WriteString(fmt.Sprintf("\n🔧 Tool call: %s\n", block.Name))
+			content.WriteString(fmt.Sprintf("Arguments: %s\n", string(block.Input)))
 		}
 	}
 
@@ -170,19 +170,19 @@ func (c *Client) Chat(ctx context.Context, messages []Message, tools []Tool) (*M
 	}, nil
 }
 
-// ChatStream 发送流式聊天请求
+// ChatStream sends a streaming chat request.
 func (c *Client) ChatStream(ctx context.Context, messages []Message, tools []Tool) (<-chan StreamEvent, error) {
 	if c.apiKey == "" {
 		ch := make(chan StreamEvent, 1)
 		ch <- StreamEvent{
 			Type:    "error",
-			Content: "未配置 API Key",
+			Content: "API key is not configured",
 		}
 		close(ch)
 		return ch, nil
 	}
 
-	// 构建请求体
+	// Build request body.
 	type toolDef struct {
 		Name        string          `json:"name"`
 		Description string          `json:"description"`
@@ -264,7 +264,7 @@ func (c *Client) ChatStream(ctx context.Context, messages []Message, tools []Too
 	return ch, nil
 }
 
-// SetProvider 设置 API 提供商
+// SetProvider sets the API provider.
 func (c *Client) SetProvider(provider string) {
 	switch provider {
 	case "anthropic":

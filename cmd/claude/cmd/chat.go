@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -60,6 +61,22 @@ func Execute() error {
 
 // runCLI runs the CLI interface (either TUI or simple REPL)
 func runCLI() error {
+	if promptFlag != "" {
+		return runSingleShot(promptFlag)
+	}
+
+	stdinInfo, err := os.Stdin.Stat()
+	if err == nil && (stdinInfo.Mode()&os.ModeCharDevice) == 0 {
+		input, readErr := io.ReadAll(os.Stdin)
+		if readErr != nil {
+			return fmt.Errorf("failed to read piped input: %w", readErr)
+		}
+		trimmed := strings.TrimSpace(string(input))
+		if trimmed != "" {
+			return runPipeMode(trimmed)
+		}
+	}
+
 	// Check if we should use TUI or simple REPL
 	if os.Getenv("CLAUDE_TUI") == "1" {
 		return runTUI()
@@ -341,6 +358,9 @@ func runInteractive() error {
 // 对应原 TS: pipe 模式中的单条提示处理
 func runSingleShot(prompt string) error {
 	app := NewApp()
+	if app.apiClient == nil {
+		return fmt.Errorf("AI client not initialized; please configure API key")
+	}
 
 	// 构建消息
 	messages := []api.Message{{Role: "user", Content: prompt}}
@@ -367,10 +387,14 @@ func runPipeMode(input string) error {
 // NewApp 创建新的应用实例
 // 对应原 TS: REPL 组件的初始化逻辑
 func NewApp() *App {
-	// 加载配置
-	cfg := config.DefaultConfig()
+	// Load configuration
+	cfgPath := config.GetConfigPath()
+	cfg, err := config.Load(cfgPath)
+	if err != nil {
+		cfg = config.DefaultConfig()
+	}
 
-	// 从环境变量读取配置
+	// Override from environment variables
 	if apiKey := os.Getenv("ANTHROPIC_API_KEY"); apiKey != "" {
 		cfg.APIKey = apiKey
 	}
@@ -381,9 +405,15 @@ func NewApp() *App {
 		cfg.Provider = provider
 	}
 
-	// 创建 API 客户端
-	client := api.NewClient(cfg.APIKey, cfg.Model)
-	client.SetProvider(cfg.Provider)
+	// Initialize session storage for TUI/single-shot paths too
+	state.InitSessionStorage(cfg)
+
+	// Create API client only when configured
+	var client *api.Client
+	if cfg.APIKey != "" {
+		client = api.NewClient(cfg.APIKey, cfg.Model)
+		client.SetProvider(cfg.Provider)
+	}
 
 	return &App{
 		config:       cfg,
@@ -422,7 +452,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case apiResponseMsg:
 		a.loading = false
 		if msg.err != nil {
-			a.messages = append(a.messages, Message{Role: "system", Content: fmt.Sprintf("错误: %v", msg.err)})
+			a.messages = append(a.messages, Message{Role: "system", Content: fmt.Sprintf("Error: %v", msg.err)})
 		} else {
 			a.messages = append(a.messages, Message{Role: "assistant", Content: msg.content})
 		}
@@ -439,7 +469,7 @@ func (a *App) View() string {
 	b.WriteString(titleStyle.Render("🚀 Claude Code Go v0.1.0"))
 	b.WriteString("\n\n")
 
-	// 显示消息（限制行数）
+	// Show messages (limited by screen height)
 	startIdx := 0
 	if len(a.messages) > a.height-10 {
 		startIdx = len(a.messages) - (a.height - 10)
@@ -449,7 +479,7 @@ func (a *App) View() string {
 		msg := a.messages[i]
 		switch msg.Role {
 		case "user":
-			b.WriteString(userStyle.Render("你: ") + msg.Content)
+			b.WriteString(userStyle.Render("You: ") + msg.Content)
 		case "assistant":
 			b.WriteString(assistantStyle.Render("Claude: ") + msg.Content)
 		case "system":
@@ -459,11 +489,11 @@ func (a *App) View() string {
 	}
 
 	if a.loading {
-		b.WriteString(assistantStyle.Render("思考中... ⏳") + "\n\n")
+		b.WriteString(assistantStyle.Render("Thinking... ⏳") + "\n\n")
 	}
 
 	b.WriteString(inputStyle.Render("> "+a.input+"█") + "\n")
-	b.WriteString(helpStyle.Render("Ctrl+C: 退出 | Enter: 发送"))
+	b.WriteString(helpStyle.Render("Ctrl+C: Exit | Enter: Send"))
 	return b.String()
 }
 
@@ -484,28 +514,32 @@ type apiResponseMsg struct {
 // 对应原 TS: query.ts 中的主查询逻辑
 func (a *App) processMessage() tea.Cmd {
 	return func() tea.Msg {
-		// 转换消息格式
+		if a.apiClient == nil {
+			return apiResponseMsg{err: fmt.Errorf("AI client not initialized; please configure API key")}
+		}
+
+		// Convert message format
 		apiMessages := make([]api.Message, len(a.messages))
 		for i, msg := range a.messages {
 			apiMessages[i] = api.Message{Role: msg.Role, Content: msg.Content}
 		}
 
-		// 获取工具列表
+		// Get tool list
 		toolsList := buildToolsList(a.toolRegistry)
 
-		// 调用 API
+		// Call API
 		resp, err := a.apiClient.ChatWithBlocks(context.Background(), apiMessages, toolsList)
 		if err != nil {
 			return apiResponseMsg{err: err}
 		}
 
-		// 处理响应
+		// Process response
 		result := processResponse(resp, a.toolRegistry)
 		return apiResponseMsg{content: result}
 	}
 }
 
-// buildToolsList 构建工具列表
+// buildToolsList builds the tool list for the API.
 func buildToolsList(registry *tools.Registry) []api.Tool {
 	toolSchemas := registry.GetToolSchemas()
 	toolsList := make([]api.Tool, len(toolSchemas))
@@ -520,8 +554,7 @@ func buildToolsList(registry *tools.Registry) []api.Tool {
 	return toolsList
 }
 
-// processResponse 处理 API 响应（包括工具调用）
-// 对应原 TS: query.ts 中的响应处理逻辑
+// processResponse handles API responses, including tool calls.
 func processResponse(resp *api.Response, registry *tools.Registry) string {
 	var result strings.Builder
 
@@ -531,14 +564,14 @@ func processResponse(resp *api.Response, registry *tools.Registry) string {
 			result.WriteString(block.Text)
 
 		case "tool_use":
-			result.WriteString(fmt.Sprintf("\n🔧 执行工具: %s\n", block.Name))
+			result.WriteString(fmt.Sprintf("\n🔧 Using tool: %s\n", block.Name))
 
-			// 执行工具
+			// Execute tool
 			toolResult, err := registry.Call(context.Background(), block.Name, block.Input)
 			if err != nil {
-				result.WriteString(fmt.Sprintf("❌ 工具执行失败: %v\n", err))
+				result.WriteString(fmt.Sprintf("❌ Tool execution failed: %v\n", err))
 			} else {
-				// 格式化输出
+				// Format output
 				formatToolResult(toolResult.Data, &result)
 			}
 		}
@@ -547,25 +580,25 @@ func processResponse(resp *api.Response, registry *tools.Registry) string {
 	return result.String()
 }
 
-// formatToolResult 格式化工具执行结果
+// formatToolResult formats tool execution output
 func formatToolResult(data json.RawMessage, result *strings.Builder) {
 	var output map[string]interface{}
 	json.Unmarshal(data, &output)
 
 	if stdout, ok := output["stdout"].(string); ok && stdout != "" {
-		result.WriteString(fmt.Sprintf("📤 输出:\n%s\n", stdout))
+		result.WriteString(fmt.Sprintf("📤 Output:\n%s\n", stdout))
 	}
 	if content, ok := output["content"].(string); ok && content != "" {
 		lines := strings.Split(content, "\n")
 		if len(lines) > 10 {
-			result.WriteString(fmt.Sprintf("📄 内容 (前10行):\n%s\n... (%d more lines)\n",
+			result.WriteString(fmt.Sprintf("📄 Content (first 10 lines):\n%s\n... (%d more lines)\n",
 				strings.Join(lines[:10], "\n"), len(lines)-10))
 		} else {
-			result.WriteString(fmt.Sprintf("📄 内容:\n%s\n", content))
+			result.WriteString(fmt.Sprintf("📄 Content:\n%s\n", content))
 		}
 	}
 	if files, ok := output["files"].([]interface{}); ok {
-		result.WriteString(fmt.Sprintf("📁 找到 %d 个文件\n", len(files)))
+		result.WriteString(fmt.Sprintf("📁 Found %d files\n", len(files)))
 	}
-	result.WriteString("✅ 执行成功\n")
+	result.WriteString("✅ Success\n")
 }
