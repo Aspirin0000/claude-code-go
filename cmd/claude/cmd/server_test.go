@@ -129,3 +129,32 @@ func TestServerMethodNotAllowed(t *testing.T) {
 		t.Errorf("expected 405, got %d", rr.Code)
 	}
 }
+
+func TestServerModels(t *testing.T) {
+	client := api.NewClient("test-key", "claude-test")
+	registry := tools.NewDefaultRegistry()
+	server := NewServer(client, registry, "claude-test")
+
+	mux := http.NewServeMux()
+	server.RegisterRoutes(mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/models", nil)
+	rr := httptest.NewRecorder()
+	mux.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+	if resp["count"].(float64) == 0 {
+		t.Error("expected non-zero model count")
+	}
+	models, ok := resp["models"].([]interface{})
+	if !ok || len(models) == 0 {
+		t.Error("expected models list")
+	}
+}

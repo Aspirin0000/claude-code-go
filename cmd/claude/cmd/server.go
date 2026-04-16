@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Aspirin0000/claude-code-go/cmd/claude/commands"
 	"github.com/Aspirin0000/claude-code-go/internal/api"
 	"github.com/Aspirin0000/claude-code-go/internal/services/analytics"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
@@ -57,6 +58,7 @@ func NewServer(client *api.Client, registry *tools.Registry, model string) *Serv
 func (s *Server) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/tools", s.handleTools)
+	mux.HandleFunc("/models", s.handleModels)
 	mux.HandleFunc("/chat", s.handleChat)
 }
 
@@ -83,6 +85,30 @@ func (s *Server) handleTools(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]interface{}{
 		"tools": toolSchemas,
 		"count": len(toolSchemas),
+	})
+}
+
+func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	models := make([]map[string]interface{}, 0, len(commands.AvailableModels))
+	for _, m := range commands.AvailableModels {
+		models = append(models, map[string]interface{}{
+			"id":           m.ID,
+			"name":         m.Name,
+			"description":  m.Description,
+			"context_win":  m.ContextWin,
+			"input_price":  m.InputPrice,
+			"output_price": m.OutputPrice,
+			"strengths":    m.Strengths,
+		})
+	}
+	writeJSON(w, map[string]interface{}{
+		"models": models,
+		"count":  len(models),
 	})
 }
 
