@@ -283,3 +283,42 @@ func TestCalculateStartIdx(t *testing.T) {
 		t.Error("expected startIdx > 0 when messages exceed screen height")
 	}
 }
+
+func TestMultiLineInput(t *testing.T) {
+	app := &App{width: 40, styles: newStyles("dark")}
+
+	// Alt+Enter should add a newline
+	_, _ = app.Update(tea.KeyMsg{Type: tea.KeyEnter, Alt: true})
+	if app.input != "\n" {
+		t.Errorf("expected newline in input, got %q", app.input)
+	}
+
+	// Regular Enter should not add newline when loading or empty
+	app.input = "hello"
+	app.loading = true
+	_, _ = app.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if app.input != "hello" {
+		t.Errorf("expected input unchanged when loading, got %q", app.input)
+	}
+}
+
+func TestRenderInputText(t *testing.T) {
+	app := &App{width: 20, input: "hello world this is long", styles: newStyles("dark")}
+	rendered := app.renderInputText()
+	if !strings.Contains(rendered, "> ") {
+		t.Error("expected input prefix")
+	}
+	if !strings.Contains(rendered, "█") {
+		t.Error("expected cursor")
+	}
+	// Should wrap and indent continuation lines
+	lines := strings.Split(rendered, "\n")
+	if len(lines) <= 1 {
+		t.Error("expected wrapped input to have multiple lines")
+	}
+	for i := 1; i < len(lines); i++ {
+		if !strings.HasPrefix(lines[i], "  ") {
+			t.Errorf("expected continuation line %d to be indented, got %q", i, lines[i])
+		}
+	}
+}

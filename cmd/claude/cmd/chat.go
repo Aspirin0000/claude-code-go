@@ -805,7 +805,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return a, tea.Quit
 		case tea.KeyEnter:
-			if a.input != "" && !a.loading {
+			if msg.Alt {
+				a.input += "\n"
+				a.historyIndex = len(a.inputHistory)
+			} else if a.input != "" && !a.loading {
 				return a.handleInput()
 			}
 		case tea.KeyBackspace:
@@ -988,9 +991,24 @@ func (a *App) View() string {
 
 	b.WriteString(a.styles.dividerStyle.Render(strings.Repeat("─", a.width)))
 	b.WriteString("\n")
-	b.WriteString(a.styles.inputStyle.Render("> "+a.input+"█") + "\n")
-	b.WriteString(a.styles.helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
+	b.WriteString(a.styles.inputStyle.Render(a.renderInputText()) + "\n")
+	b.WriteString(a.styles.helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | Alt+Enter: Newline | ↑↓: History | PgUp/PgDn: Scroll"))
 	return b.String()
+}
+
+func (a *App) renderInputText() string {
+	prefix := "> "
+	suffix := "█"
+	cw := a.width - 2 // account for inputStyle padding(0,1) on both sides
+	if cw < 1 {
+		cw = 1
+	}
+	wrapped := wrapText(prefix+a.input+suffix, cw)
+	lines := strings.Split(wrapped, "\n")
+	for i := 1; i < len(lines); i++ {
+		lines[i] = strings.Repeat(" ", len(prefix)) + lines[i]
+	}
+	return strings.Join(lines, "\n")
 }
 
 // wrapText wraps text to fit within the given width.
