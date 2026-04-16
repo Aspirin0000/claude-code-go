@@ -48,6 +48,18 @@ func IsHookEvent(value string) bool {
 	return false
 }
 
+// GetAllHookEvents returns all valid hook events.
+func GetAllHookEvents() []HookEvent {
+	return []HookEvent{
+		HookEventPreToolUse,
+		HookEventUserPromptSubmit,
+		HookEventSessionStart,
+		HookEventSetup,
+		HookEventSubagentStart,
+		HookEventFileChanged,
+	}
+}
+
 // PromptRequest 提示请求
 // 对应 TS: export type PromptRequest = ...
 type PromptRequest struct {

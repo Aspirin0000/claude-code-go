@@ -94,6 +94,26 @@ func (m *Manager) HasHooks(event types.HookEvent) bool {
 	return len(m.hooks[event]) > 0
 }
 
+// HookInfo represents information about a registered hook.
+type HookInfo struct {
+	Name   string
+	IsSync bool
+}
+
+// ListHooks returns all registered hooks for a given event.
+func (m *Manager) ListHooks(event types.HookEvent) []HookInfo {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	list := make([]HookInfo, 0, len(m.hooks[event]))
+	for _, h := range m.hooks[event] {
+		list = append(list, HookInfo{
+			Name:   h.Name,
+			IsSync: h.Sync != nil,
+		})
+	}
+	return list
+}
+
 // ExecuteSync runs all synchronous hooks for an event and returns an aggregated result.
 // If any hook returns Continue=false, execution stops early.
 func (m *Manager) ExecuteSync(ctx context.Context, event types.HookEvent, input types.HookInput) (*types.SyncHookResponse, error) {
