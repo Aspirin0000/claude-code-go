@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/Aspirin0000/claude-code-go/internal/api"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
@@ -231,5 +233,53 @@ func TestMouseScroll(t *testing.T) {
 	_, _ = app.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown})
 	if app.scrollOffset != 0 {
 		t.Errorf("expected scrollOffset to stay at 0, got %d", app.scrollOffset)
+	}
+}
+
+func TestMessageLines(t *testing.T) {
+	app := &App{width: 40, styles: newStyles("dark")}
+
+	msg := state.Message{
+		Role:      "user",
+		Content:   "hello world",
+		Timestamp: time.Now(),
+	}
+	lines := app.messageLines(msg)
+	if lines < 3 {
+		t.Errorf("expected at least 3 lines for short message, got %d", lines)
+	}
+
+	// Long message should wrap
+	msg.Content = strings.Repeat("a ", 30)
+	linesLong := app.messageLines(msg)
+	if linesLong <= lines {
+		t.Errorf("expected more lines for long message, got %d vs %d", linesLong, lines)
+	}
+}
+
+func TestCalculateStartIdx(t *testing.T) {
+	app := &App{width: 40, height: 20, styles: newStyles("dark")}
+
+	messages := []state.Message{
+		{Role: "user", Content: "msg 1"},
+		{Role: "assistant", Content: "msg 2"},
+		{Role: "user", Content: "msg 3"},
+	}
+
+	idx := app.calculateStartIdx(messages)
+	if idx != 0 {
+		t.Errorf("expected startIdx 0 for few messages, got %d", idx)
+	}
+
+	// Add many long messages
+	for i := 0; i < 20; i++ {
+		messages = append(messages, state.Message{
+			Role:    "assistant",
+			Content: strings.Repeat("word ", 20),
+		})
+	}
+	idx = app.calculateStartIdx(messages)
+	if idx == 0 {
+		t.Error("expected startIdx > 0 when messages exceed screen height")
 	}
 }

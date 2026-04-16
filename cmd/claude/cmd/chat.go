@@ -915,14 +915,8 @@ func (a *App) View() string {
 	b.WriteString(a.styles.dividerStyle.Render(strings.Repeat("─", a.width)))
 	b.WriteString("\n\n")
 
-	visibleCount := a.height - 12
-	startIdx := 0
-	if len(messages) > visibleCount {
-		startIdx = len(messages) - visibleCount - a.scrollOffset
-		if startIdx < 0 {
-			startIdx = 0
-		}
-	}
+	// Calculate start index based on approximate wrapped line counts
+	startIdx := a.calculateStartIdx(messages)
 
 	for i := startIdx; i < len(messages); i++ {
 		msg := messages[i]
@@ -1001,6 +995,85 @@ func (a *App) View() string {
 
 // wrapText wraps text to fit within the given width.
 // It preserves existing newlines and breaks long words.
+func (a *App) calculateStartIdx(messages []state.Message) int {
+	if len(messages) == 0 {
+		return 0
+	}
+
+	// Reserve space for header, dividers, input, help, and bottom elements
+	reserved := 10
+	if a.loading {
+		reserved += 2 // thinking indicator or streaming text
+	}
+	available := a.height - reserved - a.scrollOffset*2
+	if available < 1 {
+		available = 1
+	}
+
+	totalLines := 0
+	for i := len(messages) - 1; i >= 0; i-- {
+		msg := messages[i]
+		lines := a.messageLines(msg)
+		totalLines += lines
+		if totalLines >= available {
+			return i
+		}
+	}
+	return 0
+}
+
+func (a *App) messageLines(msg state.Message) int {
+	timestampWidth := 0
+	if !msg.Timestamp.IsZero() {
+		timestampWidth = 6 // "15:04 "
+	}
+
+	var content string
+	var prefixWidth int
+	switch msg.Role {
+	case "user":
+		prefixWidth = timestampWidth + 4 // "You: "
+		if msg.Content == "" && len(msg.Blocks) > 0 {
+			content = "[tool results]"
+		} else {
+			content = msg.Content
+		}
+	case "assistant":
+		prefixWidth = timestampWidth + 8 // "Claude: "
+		content = msg.Content
+		if len(msg.Blocks) > 0 {
+			hasToolUse := false
+			for _, block := range msg.Blocks {
+				if block.Type == "tool_use" {
+					hasToolUse = true
+					break
+				}
+			}
+			if hasToolUse {
+				if content != "" {
+					content = content + "\n[using tools...]"
+				} else {
+					content = "[using tools...]"
+				}
+			}
+		}
+	case "system":
+		prefixWidth = timestampWidth
+		content = msg.Content
+	default:
+		prefixWidth = timestampWidth
+		content = msg.Content
+	}
+
+	cw := a.width - prefixWidth
+	if cw < 1 {
+		cw = 1
+	}
+	wrapped := wrapText(content, cw)
+	lineCount := strings.Count(wrapped, "\n") + 1
+	return lineCount + 2 // +2 for trailing "\n\n"
+}
+
 func wrapText(text string, width int) string {
 	if width <= 0 {
 		return text
