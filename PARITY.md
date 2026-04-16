@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **~42 slash commands** fully implemented and tested
+- **~44 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -235,13 +235,14 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/mcp-list` (/mcps) - List MCP servers
 - ✅ `/mcp-remove` - Remove MCP server
 
-#### Tool Commands (4)
+#### Tool Commands (5)
 - ✅ `/bash` (/sh) - Execute bash commands
 - ✅ `/git` (/g) - Git operations
 - ✅ `/grep` - File content search
 - ✅ `/glob` - File pattern matching
+- ✅ `/find` (/fd) - Find files by name
 
-#### Advanced Commands (11)
+#### Advanced Commands (12)
 - ✅ `/plan` - Create execution plans
 - ✅ `/review` - Review code changes
 - ✅ `/tasks` - Task management
@@ -253,8 +254,9 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/skills` - Reusable prompt templates
 - ✅ `/copy` - Copy last assistant message to clipboard
 - ✅ `/plugins` (/plugin) - List installed plugins
+- ✅ `/hooks` - Show registered event hooks
 
-**Status:** ~42 commands implemented (focused on core functionality)
+**Status:** ~44 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -309,7 +311,7 @@ Evidence: `internal/types/`
 - Configuration management
 - Error handling and recovery
 - ✅ JSON mode (`--json`) for structured input/output
-- ✅ HTTP server mode (`--serve`) with /chat, /health, /tools endpoints
+- ✅ HTTP server mode (`--serve`) with /chat, /health, /tools, /models endpoints
 - ✅ TUI status bar with model name, message count, and timestamps
 - ✅ Streaming text output in REPL and TUI via `CLAUDE_STREAM=1`
 - ✅ Message timestamps in conversation state, TUI, save/export, and search
@@ -523,6 +525,11 @@ All P0 items are now functional:
 90. ✅ Exported `GetPluginsDirectory()` from `internal/plugins`
 91. ✅ Fixed TUI scroll logic to account for wrapped message line counts (`calculateStartIdx`, `messageLines`)
 92. ✅ Added scroll logic unit tests
+93. ✅ Added `/find` (/fd) command for recursive filename search
+94. ✅ Added `/models` endpoint to HTTP server
+95. ✅ Added multi-line TUI input support with Alt+Enter and wrapped input rendering (`renderInputText`)
+96. ✅ Added `/hooks` command to list registered event hooks
+97. ✅ Added `GetAllHookEvents()` to `internal/types` and `ListHooks()` to `internal/hooks`
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -531,4 +538,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-16 (edits/rollback + plugins + TUI wrapping/mouse + ~42 commands + all 56 tools complete)*
+*Last Updated: 2026-04-16 (hooks/find/models + multi-line input + ~44 commands + all 56 tools complete)*
