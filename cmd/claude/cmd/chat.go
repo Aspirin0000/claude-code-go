@@ -922,10 +922,15 @@ func (a *App) View() string {
 		}
 		switch msg.Role {
 		case "user":
+			prefix := timestampStr + a.styles.userStyle.Render("You: ")
+			cw := a.width - visibleWidth(prefix)
+			if cw < 1 {
+				cw = 1
+			}
 			if msg.Content == "" && len(msg.Blocks) > 0 {
-				b.WriteString(timestampStr + a.styles.userStyle.Render("You: ") + "[tool results]")
+				b.WriteString(prefix + "[tool results]")
 			} else {
-				b.WriteString(timestampStr + a.styles.userStyle.Render("You: ") + msg.Content)
+				b.WriteString(prefix + wrapText(msg.Content, cw))
 			}
 		case "assistant":
 			content := msg.Content
@@ -945,9 +950,19 @@ func (a *App) View() string {
 					}
 				}
 			}
-			b.WriteString(timestampStr + a.styles.assistantStyle.Render("Claude: ") + content)
+			prefix := timestampStr + a.styles.assistantStyle.Render("Claude: ")
+			cw := a.width - visibleWidth(prefix)
+			if cw < 1 {
+				cw = 1
+			}
+			b.WriteString(prefix + wrapText(content, cw))
 		case "system":
-			b.WriteString(timestampStr + a.styles.systemStyle.Render(msg.Content))
+			prefix := timestampStr
+			cw := a.width - visibleWidth(prefix)
+			if cw < 1 {
+				cw = 1
+			}
+			b.WriteString(prefix + a.styles.systemStyle.Render(wrapText(msg.Content, cw)))
 		}
 		b.WriteString("\n\n")
 	}
@@ -958,7 +973,12 @@ func (a *App) View() string {
 
 	// Show streaming text preview if active
 	if a.loading && a.streamingText != "" {
-		b.WriteString(a.styles.assistantStyle.Render("Claude: ") + a.streamingText + "▌")
+		prefix := a.styles.assistantStyle.Render("Claude: ")
+		cw := a.width - visibleWidth(prefix)
+		if cw < 1 {
+			cw = 1
+		}
+		b.WriteString(prefix + wrapText(a.streamingText, cw) + "▌")
 		b.WriteString("\n\n")
 	}
 
@@ -966,6 +986,82 @@ func (a *App) View() string {
 	b.WriteString("\n")
 	b.WriteString(a.styles.inputStyle.Render("> "+a.input+"█") + "\n")
 	b.WriteString(a.styles.helpStyle.Render("Ctrl+C / Esc: Exit | Enter: Send | ↑↓: History | PgUp/PgDn: Scroll"))
+	return b.String()
+}
+
+// wrapText wraps text to fit within the given width.
+// It preserves existing newlines and breaks long words.
+func wrapText(text string, width int) string {
+	if width <= 0 {
+		return text
+	}
+	var result strings.Builder
+	lines := strings.Split(text, "\n")
+	for lineIdx, line := range lines {
+		if lineIdx > 0 {
+			result.WriteString("\n")
+		}
+		if len(line) == 0 {
+			continue
+		}
+		words := strings.Fields(line)
+		if len(words) == 0 {
+			continue
+		}
+
+		currentLine := words[0]
+		for len(currentLine) > width {
+			result.WriteString(currentLine[:width])
+			result.WriteString("\n")
+			currentLine = currentLine[width:]
+		}
+
+		for _, word := range words[1:] {
+			if len(currentLine)+1+len(word) <= width {
+				currentLine += " " + word
+			} else {
+				result.WriteString(currentLine)
+				result.WriteString("\n")
+				currentLine = word
+				for len(currentLine) > width {
+					result.WriteString(currentLine[:width])
+					result.WriteString("\n")
+					currentLine = currentLine[width:]
+				}
+			}
+		}
+		if currentLine != "" {
+			result.WriteString(currentLine)
+		}
+	}
+	return result.String()
+}
+
+// visibleWidth returns the visible width of a string rendered by lipgloss.
+// For plain text this is just the length; for styled strings we approximate
+// by stripping ANSI sequences. Since lipgloss.Render is called on short
+// labels, we approximate by measuring the input to Render().
+func visibleWidth(s string) int {
+	// Simple ANSI strip: look for \x1b[...m sequences
+	clean := ansiStripRegex(s)
+	return len(clean)
+}
+
+func ansiStripRegex(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\x1b' {
+			// skip until 'm'
+			for j := i + 1; j < len(s); j++ {
+				if s[j] == 'm' {
+					i = j
+					break
+				}
+			}
+			continue
+		}
+		b.WriteByte(s[i])
+	}
 	return b.String()
 }
 

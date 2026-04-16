@@ -133,3 +133,80 @@ func TestAppFinishStream(t *testing.T) {
 		t.Error("expected streamBlocks to be cleared")
 	}
 }
+
+func TestWrapText(t *testing.T) {
+	tests := []struct {
+		name     string
+		text     string
+		width    int
+		expected string
+	}{
+		{
+			name:     "short text no wrap",
+			text:     "hello world",
+			width:    20,
+			expected: "hello world",
+		},
+		{
+			name:     "wrap long line",
+			text:     "hello world this is a long sentence",
+			width:    10,
+			expected: "hello\nworld this\nis a long\nsentence",
+		},
+		{
+			name:     "preserve newlines",
+			text:     "line one\nline two",
+			width:    20,
+			expected: "line one\nline two",
+		},
+		{
+			name:     "break very long word",
+			text:     "supercalifragilisticexpialidocious",
+			width:    10,
+			expected: "supercalif\nragilistic\nexpialidoc\nious",
+		},
+		{
+			name:     "zero width fallback",
+			text:     "hello",
+			width:    0,
+			expected: "hello",
+		},
+		{
+			name:     "multiple spaces collapsed",
+			text:     "hello    world",
+			width:    20,
+			expected: "hello world",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := wrapText(tt.text, tt.width)
+			if got != tt.expected {
+				t.Errorf("wrapText(%q, %d) = %q, want %q", tt.text, tt.width, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestVisibleWidth(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int
+	}{
+		{"plain text", "hello", 5},
+		{"with ansi", "\x1b[31mhello\x1b[0m", 5},
+		{"empty", "", 0},
+		{"only ansi", "\x1b[31m\x1b[0m", 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := visibleWidth(tt.input)
+			if got != tt.expected {
+				t.Errorf("visibleWidth(%q) = %d, want %d", tt.input, got, tt.expected)
+			}
+		})
+	}
+}
