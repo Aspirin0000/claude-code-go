@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/Aspirin0000/claude-code-go/internal/state"
 )
 
 // NotebookEditTool Notebook editing tool
@@ -169,6 +171,13 @@ func (n *NotebookEditTool) Call(ctx context.Context, input json.RawMessage) (jso
 		if err := os.WriteFile(params.NotebookPath, output, 0644); err != nil {
 			return nil, fmt.Errorf("failed to write notebook: %w", err)
 		}
+
+		state.GlobalState.AddEdit(state.Edit{
+			Tool:        "notebook_edit",
+			FilePath:    params.NotebookPath,
+			Operation:   "edit",
+			Description: fmt.Sprintf("Edited notebook (%s cell)", params.EditMode),
+		})
 	}
 
 	return json.Marshal(result)

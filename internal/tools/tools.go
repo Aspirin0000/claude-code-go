@@ -14,6 +14,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/Aspirin0000/claude-code-go/internal/state"
 )
 
 // BashTool Bash command execution tool
@@ -168,9 +170,22 @@ func (f *FileWriteTool) Call(ctx context.Context, input json.RawMessage) (json.R
 		return nil, err
 	}
 
+	_, fileExists := os.Stat(params.FilePath)
+
 	if err := os.WriteFile(params.FilePath, []byte(params.Content), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
+
+	desc := "Wrote file"
+	if os.IsNotExist(fileExists) {
+		desc = "Created file"
+	}
+	state.GlobalState.AddEdit(state.Edit{
+		Tool:        "file_write",
+		FilePath:    params.FilePath,
+		Operation:   "write",
+		Description: desc,
+	})
 
 	result := struct {
 		Success bool `json:"success"`
@@ -227,6 +242,13 @@ func (f *FileEditTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	if err := os.WriteFile(params.FilePath, []byte(newContent), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
+
+	state.GlobalState.AddEdit(state.Edit{
+		Tool:        "file_edit",
+		FilePath:    params.FilePath,
+		Operation:   "edit",
+		Description: "Edited file (search and replace)",
+	})
 
 	result := struct {
 		Success bool `json:"success"`
@@ -749,6 +771,13 @@ func (f *FileDeleteTool) Call(ctx context.Context, input json.RawMessage) (json.
 		return nil, fmt.Errorf("failed to delete: %w", err)
 	}
 
+	state.GlobalState.AddEdit(state.Edit{
+		Tool:        "file_delete",
+		FilePath:    params.Path,
+		Operation:   "delete",
+		Description: "Deleted file or directory",
+	})
+
 	return json.Marshal(struct {
 		Success bool   `json:"success"`
 		Path    string `json:"path"`
@@ -787,6 +816,13 @@ func (d *DirWriteTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	if err := os.MkdirAll(params.Path, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
+
+	state.GlobalState.AddEdit(state.Edit{
+		Tool:        "dir_write",
+		FilePath:    params.Path,
+		Operation:   "mkdir",
+		Description: "Created directory",
+	})
 
 	return json.Marshal(struct {
 		Success bool   `json:"success"`
@@ -828,6 +864,13 @@ func (f *FileMoveTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	if err := os.Rename(params.Source, params.Destination); err != nil {
 		return nil, fmt.Errorf("failed to move: %w", err)
 	}
+
+	state.GlobalState.AddEdit(state.Edit{
+		Tool:        "file_move",
+		FilePath:    params.Source,
+		Operation:   "move",
+		Description: fmt.Sprintf("Moved to %s", params.Destination),
+	})
 
 	return json.Marshal(struct {
 		Success     bool   `json:"success"`

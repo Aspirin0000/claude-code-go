@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Aspirin0000/claude-code-go/internal/state"
 )
 
 // DockerPsTool Docker ps tool
@@ -576,6 +578,13 @@ func (s *SedReplaceTool) Call(ctx context.Context, input json.RawMessage) (json.
 	if err := os.WriteFile(params.FilePath, []byte(newContent), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
+
+	state.GlobalState.AddEdit(state.Edit{
+		Tool:        "sed_replace",
+		FilePath:    params.FilePath,
+		Operation:   "edit",
+		Description: "Edited file (sed replacement)",
+	})
 
 	return json.Marshal(struct {
 		Success bool `json:"success"`

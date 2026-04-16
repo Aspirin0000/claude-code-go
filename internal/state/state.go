@@ -28,6 +28,15 @@ type Message struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// Edit represents a file modification made by an AI tool.
+type Edit struct {
+	Timestamp   time.Time `json:"timestamp"`
+	Tool        string    `json:"tool"`
+	FilePath    string    `json:"file_path"`
+	Operation   string    `json:"operation"`
+	Description string    `json:"description"`
+}
+
 // AppState holds the global application state.
 type AppState struct {
 	mu sync.RWMutex
@@ -39,6 +48,7 @@ type AppState struct {
 	ProjectRoot    string
 	ConversationID string
 	TurnCount      int
+	Edits          []Edit
 }
 
 // NewAppState creates a new application state.
@@ -46,6 +56,7 @@ func NewAppState() *AppState {
 	return &AppState{
 		Messages: make([]Message, 0),
 		Tools:    make([]string, 0),
+		Edits:    make([]Edit, 0),
 	}
 }
 
@@ -103,6 +114,32 @@ func (s *AppState) IncrementTurn() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.TurnCount++
+}
+
+// AddEdit records a file modification.
+func (s *AppState) AddEdit(edit Edit) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if edit.Timestamp.IsZero() {
+		edit.Timestamp = time.Now()
+	}
+	s.Edits = append(s.Edits, edit)
+}
+
+// GetEdits returns a copy of all recorded edits.
+func (s *AppState) GetEdits() []Edit {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make([]Edit, len(s.Edits))
+	copy(result, s.Edits)
+	return result
+}
+
+// ClearEdits removes all recorded edits.
+func (s *AppState) ClearEdits() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Edits = make([]Edit, 0)
 }
 
 // GlobalState is the global application state instance.
