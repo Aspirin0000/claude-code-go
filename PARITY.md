@@ -249,7 +249,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/memory` - Session memory
 - ✅ `/cost` - Cost tracking
 - ✅ `/diff` - Git diff viewing
-- ✅ `/search` (/find, /grep-history) - Search conversation history
+- ✅ `/search` (/grep-history) - Search conversation history
 - ✅ `/skills` - Reusable prompt templates
 - ✅ `/copy` - Copy last assistant message to clipboard
 - ✅ `/plugins` (/plugin) - List installed plugins

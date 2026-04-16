@@ -21,7 +21,7 @@ func NewSearchCommand() *SearchCommand {
 			"search",
 			"Search conversation history for keywords",
 			CategorySession,
-		).WithAliases("find", "grep-history").
+		).WithAliases("grep-history").
 			WithHelp(`Usage: /search <keyword>
 
 Search through the current conversation history for messages containing the given keyword.
@@ -29,7 +29,7 @@ Search through the current conversation history for messages containing the give
 Examples:
   /search docker
   /search function
-  /find "error message"`),
+  /grep-history "error message"`),
 	}
 }
 
