@@ -39,11 +39,11 @@ func (s PluginSource) IsRemote() bool {
 
 // GetPluginCachePath returns the path where plugin cache is stored
 func GetPluginCachePath() string {
-	return filepath.Join(getPluginsDirectory(), "cache")
+	return filepath.Join(GetPluginsDirectory(), "cache")
 }
 
-// getPluginsDirectory returns the main plugins directory
-func getPluginsDirectory() string {
+// GetPluginsDirectory returns the main plugins directory
+func GetPluginsDirectory() string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
 		configDir = "."
@@ -71,7 +71,7 @@ func ParsePluginIdentifier(pluginID string) (name, marketplace string) {
 
 // GetVersionedCachePath returns the versioned cache path for a plugin
 func GetVersionedCachePath(pluginID, version string) string {
-	return GetVersionedCachePathIn(getPluginsDirectory(), pluginID, version)
+	return GetVersionedCachePathIn(GetPluginsDirectory(), pluginID, version)
 }
 
 // GetVersionedCachePathIn returns versioned cache path under a specific base directory
@@ -496,7 +496,7 @@ func LoadAllPlugins() (*PluginLoadResult, error) {
 	}
 
 	// Load from builtin plugins directory
-	builtinPath := filepath.Join(getPluginsDirectory(), "builtin")
+	builtinPath := filepath.Join(GetPluginsDirectory(), "builtin")
 	if entries, err := os.ReadDir(builtinPath); err == nil {
 		for _, entry := range entries {
 			if !entry.IsDir() {
