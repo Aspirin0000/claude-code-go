@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **~44 slash commands** fully implemented and tested
+- **~45 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -242,7 +242,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/glob` - File pattern matching
 - ✅ `/find` (/fd) - Find files by name
 
-#### Advanced Commands (12)
+#### Advanced Commands (13)
 - ✅ `/plan` - Create execution plans
 - ✅ `/review` - Review code changes
 - ✅ `/tasks` - Task management
@@ -255,6 +255,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/copy` - Copy last assistant message to clipboard
 - ✅ `/plugins` (/plugin) - List installed plugins
 - ✅ `/hooks` - Show registered event hooks
+- ✅ `/agent` - Spawn a specialized AI agent
 
 **Status:** ~44 commands implemented (focused on core functionality)
 
@@ -530,6 +531,8 @@ All P0 items are now functional:
 95. ✅ Added multi-line TUI input support with Alt+Enter and wrapped input rendering (`renderInputText`)
 96. ✅ Added `/hooks` command to list registered event hooks
 97. ✅ Added `GetAllHookEvents()` to `internal/types` and `ListHooks()` to `internal/hooks`
+98. ✅ Implemented `/agent` command to spawn specialized AI agents directly from the CLI
+99. ✅ Added agent command tests (missing args, no API key, registration)
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -538,4 +541,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-16 (hooks/find/models + multi-line input + ~44 commands + all 56 tools complete)*
+*Last Updated: 2026-04-16 (agent/hooks/find/models + multi-line input + ~45 commands + all 56 tools complete)*
