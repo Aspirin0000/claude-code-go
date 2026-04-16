@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **~39 slash commands** fully implemented and tested
+- **~42 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -210,7 +210,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/init` - Initialize configuration
 - ✅ `/doctor` - System diagnostics
 
-#### Session Management (7)
+#### Session Management (9)
 - ✅ `/compact` - Compress conversation history (with AI summarization)
 - ✅ `/resume` - Resume historical session
 - ✅ `/save` - Save session to file
@@ -218,6 +218,8 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/history` - Show conversation history summary
 - ✅ `/reset` - Clear conversation history
 - ✅ `/context` - Show AI conversation context
+- ✅ `/edits` (/changes, /mods) - Show AI file modifications in this session
+- ✅ `/rollback` (/undo) - Undo the last AI file modification
 
 #### Configuration Management (6)
 - ✅ `/config` - Configuration management
@@ -239,7 +241,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/grep` - File content search
 - ✅ `/glob` - File pattern matching
 
-#### Advanced Commands (10)
+#### Advanced Commands (11)
 - ✅ `/plan` - Create execution plans
 - ✅ `/review` - Review code changes
 - ✅ `/tasks` - Task management
@@ -250,8 +252,9 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/search` (/find, /grep-history) - Search conversation history
 - ✅ `/skills` - Reusable prompt templates
 - ✅ `/copy` - Copy last assistant message to clipboard
+- ✅ `/plugins` (/plugin) - List installed plugins
 
-**Status:** ~39 commands implemented (focused on core functionality)
+**Status:** ~42 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -509,6 +512,17 @@ All P0 items are now functional:
 79. ✅ Fixed `View()` duplication bug in `chat.go`
 80. ✅ Implemented `/theme` command to switch and persist TUI themes
 81. ✅ Added theme command tests (show current, switch, same theme, invalid, env override)
+82. ✅ Added TUI message text wrapping with `wrapText` helper to prevent terminal overflow
+83. ✅ Added `visibleWidth` helper to strip ANSI sequences for width calculations
+84. ✅ Added TUI mouse wheel scrolling support (`tea.WithMouseCellMotion`)
+85. ✅ Added mouse scroll unit tests
+86. ✅ Implemented `/edits` command to show AI file modifications during the session
+87. ✅ Added `/rollback` (/undo) command to undo the last AI file modification
+88. ✅ Instrumented all file-modifying tools (`file_write`, `file_edit`, `file_delete`, `file_move`, `dir_write`, `sed_replace`, `notebook_edit`) to record edits with `BeforeContent`
+89. ✅ Added `/plugins` (/plugin) command to list installed plugins
+90. ✅ Exported `GetPluginsDirectory()` from `internal/plugins`
+91. ✅ Fixed TUI scroll logic to account for wrapped message line counts (`calculateStartIdx`, `messageLines`)
+92. ✅ Added scroll logic unit tests
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -517,4 +531,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-15 (theme support + TUI refactor + ~39 commands + all 56 tools complete)*
+*Last Updated: 2026-04-16 (edits/rollback + plugins + TUI wrapping/mouse + ~42 commands + all 56 tools complete)*
