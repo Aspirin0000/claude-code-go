@@ -6,6 +6,7 @@ import (
 	"github.com/Aspirin0000/claude-code-go/internal/api"
 	"github.com/Aspirin0000/claude-code-go/internal/state"
 	"github.com/Aspirin0000/claude-code-go/internal/tools"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func TestAppHandleAPIResponse_TextOnly(t *testing.T) {
@@ -208,5 +209,27 @@ func TestVisibleWidth(t *testing.T) {
 				t.Errorf("visibleWidth(%q) = %d, want %d", tt.input, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestMouseScroll(t *testing.T) {
+	app := &App{scrollOffset: 0}
+
+	// Wheel up should increase scroll offset
+	_, _ = app.Update(tea.MouseMsg{Button: tea.MouseButtonWheelUp})
+	if app.scrollOffset != 3 {
+		t.Errorf("expected scrollOffset 3 after wheel up, got %d", app.scrollOffset)
+	}
+
+	// Wheel down should decrease scroll offset
+	_, _ = app.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown})
+	if app.scrollOffset != 0 {
+		t.Errorf("expected scrollOffset 0 after wheel down, got %d", app.scrollOffset)
+	}
+
+	// Wheel down should not go below zero
+	_, _ = app.Update(tea.MouseMsg{Button: tea.MouseButtonWheelDown})
+	if app.scrollOffset != 0 {
+		t.Errorf("expected scrollOffset to stay at 0, got %d", app.scrollOffset)
 	}
 }

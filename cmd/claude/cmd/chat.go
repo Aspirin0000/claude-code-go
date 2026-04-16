@@ -516,7 +516,7 @@ type App struct {
 
 func runInteractive() error {
 	app := NewApp()
-	p := tea.NewProgram(app, tea.WithAltScreen())
+	p := tea.NewProgram(app, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("failed to start TUI: %w", err)
 	}
@@ -832,6 +832,16 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyPgUp:
 			a.scrollOffset += 3
 		case tea.KeyPgDown:
+			a.scrollOffset -= 3
+			if a.scrollOffset < 0 {
+				a.scrollOffset = 0
+			}
+		}
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			a.scrollOffset += 3
+		case tea.MouseButtonWheelDown:
 			a.scrollOffset -= 3
 			if a.scrollOffset < 0 {
 				a.scrollOffset = 0
