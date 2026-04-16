@@ -170,21 +170,26 @@ func (f *FileWriteTool) Call(ctx context.Context, input json.RawMessage) (json.R
 		return nil, err
 	}
 
-	_, fileExists := os.Stat(params.FilePath)
+	fileInfo, fileErr := os.Stat(params.FilePath)
+	var beforeContent []byte
+	if fileErr == nil && !fileInfo.IsDir() {
+		beforeContent, _ = os.ReadFile(params.FilePath)
+	}
 
 	if err := os.WriteFile(params.FilePath, []byte(params.Content), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write file: %w", err)
 	}
 
 	desc := "Wrote file"
-	if os.IsNotExist(fileExists) {
+	if os.IsNotExist(fileErr) {
 		desc = "Created file"
 	}
 	state.GlobalState.AddEdit(state.Edit{
-		Tool:        "file_write",
-		FilePath:    params.FilePath,
-		Operation:   "write",
-		Description: desc,
+		Tool:          "file_write",
+		FilePath:      params.FilePath,
+		Operation:     "write",
+		Description:   desc,
+		BeforeContent: beforeContent,
 	})
 
 	result := struct {
@@ -244,10 +249,11 @@ func (f *FileEditTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 	}
 
 	state.GlobalState.AddEdit(state.Edit{
-		Tool:        "file_edit",
-		FilePath:    params.FilePath,
-		Operation:   "edit",
-		Description: "Edited file (search and replace)",
+		Tool:          "file_edit",
+		FilePath:      params.FilePath,
+		Operation:     "edit",
+		Description:   "Edited file (search and replace)",
+		BeforeContent: content,
 	})
 
 	result := struct {
@@ -767,15 +773,21 @@ func (f *FileDeleteTool) Call(ctx context.Context, input json.RawMessage) (json.
 		return nil, err
 	}
 
+	var beforeContent []byte
+	if info, err := os.Stat(params.Path); err == nil && !info.IsDir() {
+		beforeContent, _ = os.ReadFile(params.Path)
+	}
+
 	if err := os.Remove(params.Path); err != nil {
 		return nil, fmt.Errorf("failed to delete: %w", err)
 	}
 
 	state.GlobalState.AddEdit(state.Edit{
-		Tool:        "file_delete",
-		FilePath:    params.Path,
-		Operation:   "delete",
-		Description: "Deleted file or directory",
+		Tool:          "file_delete",
+		FilePath:      params.Path,
+		Operation:     "delete",
+		Description:   "Deleted file or directory",
+		BeforeContent: beforeContent,
 	})
 
 	return json.Marshal(struct {
@@ -870,6 +882,7 @@ func (f *FileMoveTool) Call(ctx context.Context, input json.RawMessage) (json.Ra
 		FilePath:    params.Source,
 		Operation:   "move",
 		Description: fmt.Sprintf("Moved to %s", params.Destination),
+		ExtraPath:   params.Destination,
 	})
 
 	return json.Marshal(struct {

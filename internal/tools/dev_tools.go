@@ -580,10 +580,11 @@ func (s *SedReplaceTool) Call(ctx context.Context, input json.RawMessage) (json.
 	}
 
 	state.GlobalState.AddEdit(state.Edit{
-		Tool:        "sed_replace",
-		FilePath:    params.FilePath,
-		Operation:   "edit",
-		Description: "Edited file (sed replacement)",
+		Tool:          "sed_replace",
+		FilePath:      params.FilePath,
+		Operation:     "edit",
+		Description:   "Edited file (sed replacement)",
+		BeforeContent: content,
 	})
 
 	return json.Marshal(struct {

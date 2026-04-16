@@ -30,11 +30,13 @@ type Message struct {
 
 // Edit represents a file modification made by an AI tool.
 type Edit struct {
-	Timestamp   time.Time `json:"timestamp"`
-	Tool        string    `json:"tool"`
-	FilePath    string    `json:"file_path"`
-	Operation   string    `json:"operation"`
-	Description string    `json:"description"`
+	Timestamp     time.Time `json:"timestamp"`
+	Tool          string    `json:"tool"`
+	FilePath      string    `json:"file_path"`
+	Operation     string    `json:"operation"`
+	Description   string    `json:"description"`
+	BeforeContent []byte    `json:"before_content,omitempty"`
+	ExtraPath     string    `json:"extra_path,omitempty"`
 }
 
 // AppState holds the global application state.
@@ -140,6 +142,14 @@ func (s *AppState) ClearEdits() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.Edits = make([]Edit, 0)
+}
+
+// SetEdits replaces the recorded edits list.
+func (s *AppState) SetEdits(edits []Edit) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.Edits = make([]Edit, len(edits))
+	copy(s.Edits, edits)
 }
 
 // GlobalState is the global application state instance.

@@ -123,6 +123,11 @@ func (n *NotebookEditTool) Call(ctx context.Context, input json.RawMessage) (jso
 		fileExists = false
 	}
 
+	var beforeContent []byte
+	if fileExists {
+		beforeContent, _ = os.ReadFile(params.NotebookPath)
+	}
+
 	var notebook NotebookContent
 
 	if fileExists {
@@ -173,10 +178,11 @@ func (n *NotebookEditTool) Call(ctx context.Context, input json.RawMessage) (jso
 		}
 
 		state.GlobalState.AddEdit(state.Edit{
-			Tool:        "notebook_edit",
-			FilePath:    params.NotebookPath,
-			Operation:   "edit",
-			Description: fmt.Sprintf("Edited notebook (%s cell)", params.EditMode),
+			Tool:          "notebook_edit",
+			FilePath:      params.NotebookPath,
+			Operation:     "edit",
+			Description:   fmt.Sprintf("Edited notebook (%s cell)", params.EditMode),
+			BeforeContent: beforeContent,
 		})
 	}
 
