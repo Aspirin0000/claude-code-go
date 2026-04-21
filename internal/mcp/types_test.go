@@ -303,5 +303,3 @@ func TestMcpJsonConfig(t *testing.T) {
 		t.Errorf("expected 1 server, got %d", len(config.McpServers))
 	}
 }
-
-

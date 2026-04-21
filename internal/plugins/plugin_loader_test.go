@@ -55,8 +55,8 @@ func TestGetPluginCachePath(t *testing.T) {
 
 func TestParsePluginIdentifier(t *testing.T) {
 	tests := []struct {
-		input             string
-		expectedName      string
+		input               string
+		expectedName        string
 		expectedMarketplace string
 	}{
 		{"plugin@npm", "plugin", "npm"},

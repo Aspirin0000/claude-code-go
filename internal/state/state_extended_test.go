@@ -119,7 +119,7 @@ func TestNewAppState(t *testing.T) {
 func TestAppStateAddMessageWithBlocks(t *testing.T) {
 	s := NewAppState()
 	msg := Message{
-		Type:   "assistant",
+		Type:    "assistant",
 		Content: "Hello",
 		Blocks: []ContentBlock{
 			{Type: "text", Text: "Hello"},
@@ -222,7 +222,7 @@ func TestAppStateIncrementTurnExtended(t *testing.T) {
 func TestAppStateAddEdit(t *testing.T) {
 	s := NewAppState()
 	edit := Edit{
-		Tool:    "file_write",
+		Tool:     "file_write",
 		FilePath: "/tmp/test.txt",
 	}
 	s.AddEdit(edit)
@@ -239,7 +239,7 @@ func TestAppStateAddEdit(t *testing.T) {
 func TestAppStateAddEditAutoSetsTimestamp(t *testing.T) {
 	s := NewAppState()
 	edit := Edit{
-		Tool:    "file_write",
+		Tool:     "file_write",
 		FilePath: "/tmp/test.txt",
 	}
 	s.AddEdit(edit)
