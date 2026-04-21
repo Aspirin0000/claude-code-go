@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **~47 slash commands** fully implemented and tested
+- **~48 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -210,7 +210,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/init` - Initialize configuration
 - ✅ `/doctor` - System diagnostics
 
-#### Session Management (9)
+#### Session Management (10)
 - ✅ `/compact` - Compress conversation history (with AI summarization)
 - ✅ `/resume` - Resume historical session
 - ✅ `/save` - Save session to file
@@ -220,6 +220,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/context` - Show AI conversation context
 - ✅ `/edits` (/changes, /mods) - Show AI file modifications in this session
 - ✅ `/rollback` (/undo) - Undo the last AI file modification
+- ✅ `/export` (/dump) - Export conversation to Markdown, JSON, or plain text
 
 #### Configuration Management (7)
 - ✅ `/config` - Configuration management
@@ -261,7 +262,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/hooks` - Show registered event hooks
 - ✅ `/agent` - Spawn a specialized AI agent
 
-**Status:** ~47 commands implemented (focused on core functionality)
+**Status:** ~48 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -548,6 +549,8 @@ All P0 items are now functional:
 108. ✅ Added tab completion unit tests
 109. ✅ Added `/analytics` (/stats) command for managing analytics settings (enable/disable/status)
 110. ✅ Added analytics command tests (status, enable/disable cycle, invalid action)
+111. ✅ Implemented `/export` (/dump) command to export conversations to Markdown, JSON, or plain text
+112. ✅ Added export command tests (no messages, text format, unknown format, registration)
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -556,4 +559,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-16 (analytics/tab-completion + plugin-install + agent/hooks/find/models + multi-line input + ~47 commands + all 56 tools complete)*
+*Last Updated: 2026-04-16 (export + analytics/tab-completion + plugin-install + agent/hooks/find/models + multi-line input + ~48 commands + all 56 tools complete)*
