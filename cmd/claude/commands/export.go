@@ -112,7 +112,7 @@ func (c *ExportCommand) exportMarkdown(messages []state.Message) (string, error)
 
 	for i, msg := range messages {
 		b.WriteString(fmt.Sprintf("## Message %d\n\n", i+1))
-		
+
 		role := msg.Role
 		if role == "user" {
 			role = "User"
@@ -121,18 +121,18 @@ func (c *ExportCommand) exportMarkdown(messages []state.Message) (string, error)
 		} else if role == "system" {
 			role = "System"
 		}
-		
+
 		b.WriteString(fmt.Sprintf("**Role:** %s\n", role))
 		if !msg.Timestamp.IsZero() {
 			b.WriteString(fmt.Sprintf("**Time:** %s\n", msg.Timestamp.Format("2006-01-02 15:04:05")))
 		}
 		b.WriteString("\n")
-		
+
 		if msg.Content != "" {
 			b.WriteString(msg.Content)
 			b.WriteString("\n\n")
 		}
-		
+
 		if len(msg.Blocks) > 0 {
 			b.WriteString("**Blocks:**\n\n")
 			for _, block := range msg.Blocks {
@@ -146,7 +146,7 @@ func (c *ExportCommand) exportMarkdown(messages []state.Message) (string, error)
 			}
 			b.WriteString("\n")
 		}
-		
+
 		b.WriteString("---\n\n")
 	}
 
@@ -216,21 +216,21 @@ func (c *ExportCommand) exportText(messages []state.Message) (string, error) {
 		} else if role == "assistant" {
 			role = "Claude"
 		}
-		
+
 		timestamp := ""
 		if !msg.Timestamp.IsZero() {
 			timestamp = fmt.Sprintf(" [%s]", msg.Timestamp.Format("15:04:05"))
 		}
-		
+
 		b.WriteString(fmt.Sprintf("[%d] %s%s\n", i+1, role, timestamp))
 		b.WriteString(strings.Repeat("-", 30))
 		b.WriteString("\n")
-		
+
 		if msg.Content != "" {
 			b.WriteString(msg.Content)
 			b.WriteString("\n")
 		}
-		
+
 		if len(msg.Blocks) > 0 {
 			for _, block := range msg.Blocks {
 				if block.Type == "tool_use" {
@@ -238,7 +238,7 @@ func (c *ExportCommand) exportText(messages []state.Message) (string, error) {
 				}
 			}
 		}
-		
+
 		b.WriteString("\n")
 	}
 

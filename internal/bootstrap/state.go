@@ -347,9 +347,9 @@ func SwitchSession(sessionId SessionId, projectDir *string) {
 	state.SessionId = sessionId
 	state.SessionProjectDir = projectDir
 
-	// Notify callbacks
+	// Notify callbacks synchronously to avoid race conditions
 	for _, callback := range sessionSwitchCallbacks {
-		go callback(sessionId)
+		callback(sessionId)
 	}
 }
 

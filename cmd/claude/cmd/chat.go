@@ -1029,10 +1029,10 @@ func (a *App) completeCommand(input string) string {
 	if !strings.HasPrefix(input, "/") {
 		return input
 	}
-	
+
 	prefix := strings.TrimPrefix(input, "/")
 	candidates := []string{}
-	
+
 	// Get all registered commands
 	for _, cmd := range commands.List() {
 		if strings.HasPrefix(cmd.Name(), prefix) {
@@ -1044,7 +1044,7 @@ func (a *App) completeCommand(input string) string {
 			}
 		}
 	}
-	
+
 	if len(candidates) == 1 {
 		return candidates[0] + " "
 	} else if len(candidates) > 1 {
@@ -1052,7 +1052,7 @@ func (a *App) completeCommand(input string) string {
 		// For now, just return the longest common prefix
 		return longestCommonPrefix(candidates)
 	}
-	
+
 	return input
 }
 

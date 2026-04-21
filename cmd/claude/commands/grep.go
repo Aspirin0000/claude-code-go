@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // GrepResult represents a single grep match
@@ -142,9 +141,11 @@ func (c *GrepCommand) searchGlob(ctx context.Context, re *regexp.Regexp, pattern
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	resultChan := make(chan GrepResult, 100)
+	done := make(chan struct{})
 
 	// Result collector
 	go func() {
+		defer close(done)
 		for result := range resultChan {
 			if atomic.LoadInt32(&count) >= limit {
 				continue
@@ -187,8 +188,8 @@ func (c *GrepCommand) searchGlob(ctx context.Context, re *regexp.Regexp, pattern
 	wg.Wait()
 	close(resultChan)
 
-	// Small delay to ensure all results are collected
-	time.Sleep(10 * time.Millisecond)
+	// Wait for collector goroutine to finish
+	<-done
 
 	c.printResults(results)
 	return nil

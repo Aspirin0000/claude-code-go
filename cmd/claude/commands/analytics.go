@@ -61,7 +61,7 @@ func (c *AnalyticsCommand) Execute(ctx context.Context, args []string) error {
 func (c *AnalyticsCommand) showStatus() error {
 	configDir, _ := os.UserConfigDir()
 	analyticsDir := filepath.Join(configDir, "claude", "analytics")
-	
+
 	enabled := true
 	if _, err := os.Stat(analyticsDir); os.IsNotExist(err) {
 		// Check if disabled file exists
@@ -76,7 +76,7 @@ func (c *AnalyticsCommand) showStatus() error {
 	fmt.Println("║                   Analytics Status                       ║")
 	fmt.Println("╚══════════════════════════════════════════════════════════╝")
 	fmt.Println()
-	
+
 	if enabled {
 		fmt.Println("📊 Analytics: ENABLED")
 		fmt.Println("   Events are being collected to improve the application.")
@@ -85,7 +85,7 @@ func (c *AnalyticsCommand) showStatus() error {
 		fmt.Println("📊 Analytics: DISABLED")
 		fmt.Println("   No events are being collected.")
 	}
-	
+
 	fmt.Println()
 	fmt.Println("Use '/analytics enable' or '/analytics disable' to change.")
 	fmt.Println()
@@ -97,9 +97,9 @@ func (c *AnalyticsCommand) setEnabled(enabled bool) error {
 	if err != nil {
 		configDir = "."
 	}
-	
+
 	disableFile := filepath.Join(configDir, "claude", ".analytics-disabled")
-	
+
 	if enabled {
 		// Remove disable file if exists
 		if err := os.Remove(disableFile); err != nil && !os.IsNotExist(err) {
