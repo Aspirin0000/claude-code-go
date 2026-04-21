@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **~46 slash commands** fully implemented and tested
+- **~47 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -221,13 +221,14 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/edits` (/changes, /mods) - Show AI file modifications in this session
 - ✅ `/rollback` (/undo) - Undo the last AI file modification
 
-#### Configuration Management (6)
+#### Configuration Management (7)
 - ✅ `/config` - Configuration management
 - ✅ `/model` - Switch AI model
 - ✅ `/theme` - Switch TUI color theme (light/dark)
 - ✅ `/permissions` - Permission level management
 - ✅ `/reload` - Reload configuration from disk
 - ✅ `/login` / `/logout` - API key management
+- ✅ `/analytics` (/stats) - View or manage analytics settings
 
 #### MCP Management (4)
 - ✅ `/mcp` - MCP server management
@@ -260,7 +261,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/hooks` - Show registered event hooks
 - ✅ `/agent` - Spawn a specialized AI agent
 
-**Status:** ~46 commands implemented (focused on core functionality)
+**Status:** ~47 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -543,6 +544,10 @@ All P0 items are now functional:
 104. ✅ Implemented URL plugin installation (`installURLPlugin`)
 105. ✅ Added `/plugin-install` (/install-plugin) command with source parsing (local/npm/github/url)
 106. ✅ Added plugin-install command tests (missing args, parse source, extract name, registration)
+107. ✅ Added TUI slash command tab completion with `Tab` key (`completeCommand`, `longestCommonPrefix`)
+108. ✅ Added tab completion unit tests
+109. ✅ Added `/analytics` (/stats) command for managing analytics settings (enable/disable/status)
+110. ✅ Added analytics command tests (status, enable/disable cycle, invalid action)
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -551,4 +556,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-16 (plugin-install + agent/hooks/find/models + multi-line input + ~46 commands + all 56 tools complete)*
+*Last Updated: 2026-04-16 (analytics/tab-completion + plugin-install + agent/hooks/find/models + multi-line input + ~47 commands + all 56 tools complete)*
