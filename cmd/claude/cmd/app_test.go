@@ -322,3 +322,48 @@ func TestRenderInputText(t *testing.T) {
 		}
 	}
 }
+
+func TestTabCompletion(t *testing.T) {
+	app := &App{width: 40, styles: newStyles("dark")}
+
+	// Test completing a partial command
+	app.input = "/he"
+	result := app.completeCommand(app.input)
+	if !strings.HasPrefix(result, "/help") {
+		t.Errorf("expected /help completion, got %q", result)
+	}
+
+	// Test no match returns input unchanged
+	app.input = "/xyz"
+	result = app.completeCommand(app.input)
+	if result != "/xyz" {
+		t.Errorf("expected unchanged input for no match, got %q", result)
+	}
+
+	// Test non-slash input
+	app.input = "hello"
+	result = app.completeCommand(app.input)
+	if result != "hello" {
+		t.Errorf("expected unchanged non-slash input, got %q", result)
+	}
+}
+
+func TestLongestCommonPrefix(t *testing.T) {
+	tests := []struct {
+		input []string
+		want  string
+	}{
+		{[]string{"/help", "/history"}, "/h"},
+		{[]string{"/exit", "/exit"}, "/exit"},
+		{[]string{"/a", "/b"}, "/"},
+		{[]string{"test"}, "test"},
+		{[]string{}, ""},
+	}
+
+	for _, tt := range tests {
+		got := longestCommonPrefix(tt.input)
+		if got != tt.want {
+			t.Errorf("longestCommonPrefix(%v) = %q, want %q", tt.input, got, tt.want)
+		}
+	}
+}

@@ -815,6 +815,15 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(a.input) > 0 {
 				a.input = a.input[:len(a.input)-1]
 			}
+		case tea.KeyDelete:
+			// Delete key currently has no effect (cursor is always at end)
+		case tea.KeyTab:
+			// Tab completion for slash commands
+			if strings.HasPrefix(a.input, "/") {
+				a.input = a.completeCommand(a.input)
+			} else {
+				a.input += "\t"
+			}
 		case tea.KeyRunes:
 			a.input += string(msg.Runes)
 			a.historyIndex = len(a.inputHistory)
@@ -839,6 +848,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if a.scrollOffset < 0 {
 				a.scrollOffset = 0
 			}
+		case tea.KeyHome:
+			// Home key currently has no effect (cursor is always at end)
+		case tea.KeyEnd:
+			// End key currently has no effect (cursor is always at end)
 		}
 	case tea.MouseMsg:
 		switch msg.Button {
@@ -1009,6 +1022,55 @@ func (a *App) renderInputText() string {
 		lines[i] = strings.Repeat(" ", len(prefix)) + lines[i]
 	}
 	return strings.Join(lines, "\n")
+}
+
+// completeCommand provides tab completion for slash commands
+func (a *App) completeCommand(input string) string {
+	if !strings.HasPrefix(input, "/") {
+		return input
+	}
+	
+	prefix := strings.TrimPrefix(input, "/")
+	candidates := []string{}
+	
+	// Get all registered commands
+	for _, cmd := range commands.List() {
+		if strings.HasPrefix(cmd.Name(), prefix) {
+			candidates = append(candidates, "/"+cmd.Name())
+		}
+		for _, alias := range cmd.Aliases() {
+			if strings.HasPrefix(alias, prefix) {
+				candidates = append(candidates, "/"+alias)
+			}
+		}
+	}
+	
+	if len(candidates) == 1 {
+		return candidates[0] + " "
+	} else if len(candidates) > 1 {
+		// Show completions in status bar or just return input
+		// For now, just return the longest common prefix
+		return longestCommonPrefix(candidates)
+	}
+	
+	return input
+}
+
+// longestCommonPrefix finds the longest common prefix among strings
+func longestCommonPrefix(strs []string) string {
+	if len(strs) == 0 {
+		return ""
+	}
+	prefix := strs[0]
+	for _, s := range strs[1:] {
+		for len(s) < len(prefix) || s[:len(prefix)] != prefix {
+			prefix = prefix[:len(prefix)-1]
+			if prefix == "" {
+				return ""
+			}
+		}
+	}
+	return prefix
 }
 
 // wrapText wraps text to fit within the given width.
