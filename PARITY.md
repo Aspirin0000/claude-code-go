@@ -306,6 +306,7 @@ Evidence: `internal/types/`
 - ✅ **cmd/claude/cmd/chat.go** - CLI with Cobra framework
 - ✅ Simple REPL mode (default)
 - ✅ Bubble Tea TUI mode (CLAUDE_TUI=1)
+- ✅ `--no-tui` flag to disable TUI and use simple REPL
 - ✅ Slash command integration
 - ✅ AI conversation loop with tool calling
 - ✅ Support for initial prompt (--prompt flag)
@@ -556,6 +557,8 @@ All P0 items are now functional:
 114. ✅ Fixed gofmt formatting issues in chat.go, analytics.go, export.go
 115. ✅ Added `/env` (/environment) command for viewing and setting environment variables
 116. ✅ Added env command tests (show all, show one, set variable, registration)
+117. ✅ Added `--no-tui` CLI flag to disable TUI and use simple REPL
+118. ✅ Added `--no-tui` flag registration test
 
 ### Build Status
 - ✅ `go build ./...` - Success
