@@ -19,6 +19,7 @@ type Config struct {
 	AutoSaveDir string                   `json:"auto_save_dir,omitempty"`
 	Projects    map[string]ProjectConfig `json:"projects"`
 	Env         map[string]string        `json:"env"`
+	HistorySize int                      `json:"history_size,omitempty"`
 }
 
 // ProjectConfig project-level configuration
@@ -37,12 +38,13 @@ type MCPServerConfig struct {
 // DefaultConfig returns default configuration
 func DefaultConfig() *Config {
 	return &Config{
-		Model:    "claude-sonnet-4-20250514",
-		Theme:    "dark",
-		Provider: "anthropic",
-		AutoSave: true, // Auto-save enabled by default
-		Projects: make(map[string]ProjectConfig),
-		Env:      make(map[string]string),
+		Model:       "claude-sonnet-4-20250514",
+		Theme:       "dark",
+		Provider:    "anthropic",
+		AutoSave:    true, // Auto-save enabled by default
+		Projects:    make(map[string]ProjectConfig),
+		Env:         make(map[string]string),
+		HistorySize: 10000,
 	}
 }
 

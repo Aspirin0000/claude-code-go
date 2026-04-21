@@ -20,7 +20,7 @@ func NewPluginsCommand() *PluginsCommand {
 		BaseCommand: NewBaseCommand(
 			"plugins",
 			"List installed plugins and show plugin directory",
-			CategoryAdvanced,
+			CategoryPlugins,
 		).WithAliases("plugin").
 			WithHelp(`Usage: /plugins
 
