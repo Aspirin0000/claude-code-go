@@ -37,5 +37,7 @@ jobs:
           if [ -n "$fmt_files" ]; then
             echo "The following files need formatting:"
             echo "$fmt_files"
+            gofmt -w $fmt_files
+            git diff
             exit 1
           fi
