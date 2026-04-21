@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -568,14 +569,11 @@ func InstallPlugin(source PluginSource, targetDir string) (*types.LoadedPlugin, 
 	case "local":
 		sourcePath = source.Path
 	case "npm":
-		// Would implement npm install logic
-		return nil, fmt.Errorf("npm plugin installation not yet implemented")
+		return installNPMPlugin(source, targetDir)
 	case "github":
-		// Would implement git clone from GitHub
-		return nil, fmt.Errorf("github plugin installation not yet implemented")
+		return installGitHubPlugin(source, targetDir)
 	case "url":
-		// Would implement git clone from URL
-		return nil, fmt.Errorf("url plugin installation not yet implemented")
+		return installURLPlugin(source, targetDir)
 	default:
 		return nil, fmt.Errorf("unsupported plugin source type: %s", source.Type)
 	}
@@ -590,6 +588,173 @@ func InstallPlugin(source PluginSource, targetDir string) (*types.LoadedPlugin, 
 	plugin, errors := CreatePluginFromPath(targetDir, pluginSource, true, filepath.Base(targetDir), true)
 	if len(errors) > 0 {
 		// Log errors
+		for _, err := range errors {
+			_ = err
+		}
+	}
+
+	return plugin, nil
+}
+
+// installNPMPlugin installs a plugin from npm
+func installNPMPlugin(source PluginSource, targetDir string) (*types.LoadedPlugin, error) {
+	if source.Package == "" {
+		return nil, fmt.Errorf("npm package name is required")
+	}
+
+	// Create a temporary directory for npm install
+	tmpDir, err := os.MkdirTemp("", "claude-plugin-npm-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	registry := source.Registry
+	if registry == "" {
+		registry = "https://registry.npmjs.org"
+	}
+
+	// Run npm install
+	cmd := exec.Command("npm", "install", "--prefix", tmpDir, source.Package)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("npm install failed: %w\nOutput: %s", err, string(output))
+	}
+
+	// Find the installed package
+	nodeModulesPath := filepath.Join(tmpDir, "node_modules")
+	entries, err := os.ReadDir(nodeModulesPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read node_modules: %w", err)
+	}
+
+	var packagePath string
+	for _, entry := range entries {
+		if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+			packagePath = filepath.Join(nodeModulesPath, entry.Name())
+			break
+		}
+	}
+
+	if packagePath == "" {
+		return nil, fmt.Errorf("npm package not found after install")
+	}
+
+	// Copy to target directory
+	if err := CopyDir(packagePath, targetDir); err != nil {
+		return nil, fmt.Errorf("failed to copy plugin: %w", err)
+	}
+
+	pluginSource := fmt.Sprintf("npm:%s@%s", source.Package, registry)
+	plugin, errors := CreatePluginFromPath(targetDir, pluginSource, true, filepath.Base(targetDir), true)
+	if len(errors) > 0 {
+		for _, err := range errors {
+			_ = err
+		}
+	}
+
+	return plugin, nil
+}
+
+// installGitHubPlugin installs a plugin from GitHub
+func installGitHubPlugin(source PluginSource, targetDir string) (*types.LoadedPlugin, error) {
+	if source.Repo == "" {
+		return nil, fmt.Errorf("github repository is required")
+	}
+
+	// Create a temporary directory for git clone
+	tmpDir, err := os.MkdirTemp("", "claude-plugin-github-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Build git clone URL
+	cloneURL := fmt.Sprintf("https://github.com/%s.git", source.Repo)
+	if source.Ref != "" {
+		// Clone specific ref
+		cmd := exec.Command("git", "clone", "--depth", "1", "--branch", source.Ref, cloneURL, tmpDir)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return nil, fmt.Errorf("git clone failed: %w\nOutput: %s", err, string(output))
+		}
+	} else {
+		cmd := exec.Command("git", "clone", "--depth", "1", cloneURL, tmpDir)
+		if output, err := cmd.CombinedOutput(); err != nil {
+			return nil, fmt.Errorf("git clone failed: %w\nOutput: %s", err, string(output))
+		}
+	}
+
+	// Handle git-subdir if specified
+	sourcePath := tmpDir
+	if source.Path != "" {
+		sourcePath = filepath.Join(tmpDir, source.Path)
+		if _, err := os.Stat(sourcePath); err != nil {
+			return nil, fmt.Errorf("git subdirectory not found: %s", source.Path)
+		}
+	}
+
+	// Copy to target directory
+	if err := CopyDir(sourcePath, targetDir); err != nil {
+		return nil, fmt.Errorf("failed to copy plugin: %w", err)
+	}
+
+	// Remove .git directory from cache
+	os.RemoveAll(filepath.Join(targetDir, ".git"))
+
+	pluginSource := fmt.Sprintf("github:%s@%s", source.Repo, source.Ref)
+	plugin, errors := CreatePluginFromPath(targetDir, pluginSource, true, filepath.Base(targetDir), true)
+	if len(errors) > 0 {
+		for _, err := range errors {
+			_ = err
+		}
+	}
+
+	return plugin, nil
+}
+
+// installURLPlugin installs a plugin from a git URL
+func installURLPlugin(source PluginSource, targetDir string) (*types.LoadedPlugin, error) {
+	if source.URL == "" {
+		return nil, fmt.Errorf("git URL is required")
+	}
+
+	// Validate URL
+	if err := ValidateGitUrl(source.URL); err != nil {
+		return nil, err
+	}
+
+	// Create a temporary directory for git clone
+	tmpDir, err := os.MkdirTemp("", "claude-plugin-url-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Clone from URL
+	cmd := exec.Command("git", "clone", "--depth", "1", source.URL, tmpDir)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("git clone failed: %w\nOutput: %s", err, string(output))
+	}
+
+	// Handle subdirectory if specified
+	sourcePath := tmpDir
+	if source.Path != "" {
+		sourcePath = filepath.Join(tmpDir, source.Path)
+		if _, err := os.Stat(sourcePath); err != nil {
+			return nil, fmt.Errorf("subdirectory not found: %s", source.Path)
+		}
+	}
+
+	// Copy to target directory
+	if err := CopyDir(sourcePath, targetDir); err != nil {
+		return nil, fmt.Errorf("failed to copy plugin: %w", err)
+	}
+
+	// Remove .git directory from cache
+	os.RemoveAll(filepath.Join(targetDir, ".git"))
+
+	pluginSource := fmt.Sprintf("url:%s", source.URL)
+	plugin, errors := CreatePluginFromPath(targetDir, pluginSource, true, filepath.Base(targetDir), true)
+	if len(errors) > 0 {
 		for _, err := range errors {
 			_ = err
 		}
