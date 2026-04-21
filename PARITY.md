@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **~45 slash commands** fully implemented and tested
+- **~46 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -242,7 +242,11 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/glob` - File pattern matching
 - ✅ `/find` (/fd) - Find files by name
 
-#### Advanced Commands (13)
+#### Plugin Commands (2)
+- ✅ `/plugins` (/plugin) - List installed plugins
+- ✅ `/plugin-install` (/install-plugin) - Install plugin from npm/GitHub/URL/local
+
+#### Advanced Commands (11)
 - ✅ `/plan` - Create execution plans
 - ✅ `/review` - Review code changes
 - ✅ `/tasks` - Task management
@@ -253,11 +257,10 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/search` (/grep-history) - Search conversation history
 - ✅ `/skills` - Reusable prompt templates
 - ✅ `/copy` - Copy last assistant message to clipboard
-- ✅ `/plugins` (/plugin) - List installed plugins
 - ✅ `/hooks` - Show registered event hooks
 - ✅ `/agent` - Spawn a specialized AI agent
 
-**Status:** ~44 commands implemented (focused on core functionality)
+**Status:** ~46 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -533,6 +536,13 @@ All P0 items are now functional:
 97. ✅ Added `GetAllHookEvents()` to `internal/types` and `ListHooks()` to `internal/hooks`
 98. ✅ Implemented `/agent` command to spawn specialized AI agents directly from the CLI
 99. ✅ Added agent command tests (missing args, no API key, registration)
+100. ✅ Added `HistorySize` config field with default 10000
+101. ✅ Fixed `/plugins` command category from `CategoryAdvanced` to `CategoryPlugins`
+102. ✅ Implemented npm plugin installation (`installNPMPlugin`)
+103. ✅ Implemented GitHub plugin installation (`installGitHubPlugin`)
+104. ✅ Implemented URL plugin installation (`installURLPlugin`)
+105. ✅ Added `/plugin-install` (/install-plugin) command with source parsing (local/npm/github/url)
+106. ✅ Added plugin-install command tests (missing args, parse source, extract name, registration)
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -541,4 +551,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-16 (agent/hooks/find/models + multi-line input + ~45 commands + all 56 tools complete)*
+*Last Updated: 2026-04-16 (plugin-install + agent/hooks/find/models + multi-line input + ~46 commands + all 56 tools complete)*
