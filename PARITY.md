@@ -5,7 +5,7 @@
 The Go implementation has established a solid foundation with core functionality working. The project is now **buildable and runnable**.
 
 **Current Status:**
-- **~48 slash commands** fully implemented and tested
+- **~49 slash commands** fully implemented and tested
 - **56 AI tools** complete with full functionality (100% of target + LSP)
 - **MCP Client** 95% complete with all major features
 - **API Client** fully functional with streaming and block-based tool support
@@ -222,7 +222,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/rollback` (/undo) - Undo the last AI file modification
 - ✅ `/export` (/dump) - Export conversation to Markdown, JSON, or plain text
 
-#### Configuration Management (7)
+#### Configuration Management (8)
 - ✅ `/config` - Configuration management
 - ✅ `/model` - Switch AI model
 - ✅ `/theme` - Switch TUI color theme (light/dark)
@@ -230,6 +230,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/reload` - Reload configuration from disk
 - ✅ `/login` / `/logout` - API key management
 - ✅ `/analytics` (/stats) - View or manage analytics settings
+- ✅ `/env` (/environment) - Show or set environment variables
 
 #### MCP Management (4)
 - ✅ `/mcp` - MCP server management
@@ -262,7 +263,7 @@ Evidence: `cmd/claude/commands/` (32 files, ~6,000 lines)
 - ✅ `/hooks` - Show registered event hooks
 - ✅ `/agent` - Spawn a specialized AI agent
 
-**Status:** ~48 commands implemented (focused on core functionality)
+**Status:** ~49 commands implemented (focused on core functionality)
 
 **Note:** System commands (ls, cat, docker, etc.) are handled through BashTool, not as separate slash commands. This is the correct architecture per the TypeScript source.
 
@@ -551,6 +552,10 @@ All P0 items are now functional:
 110. ✅ Added analytics command tests (status, enable/disable cycle, invalid action)
 111. ✅ Implemented `/export` (/dump) command to export conversations to Markdown, JSON, or plain text
 112. ✅ Added export command tests (no messages, text format, unknown format, registration)
+113. ✅ Fixed race conditions in grep command and bootstrap state (switched to synchronous callbacks)
+114. ✅ Fixed gofmt formatting issues in chat.go, analytics.go, export.go
+115. ✅ Added `/env` (/environment) command for viewing and setting environment variables
+116. ✅ Added env command tests (show all, show one, set variable, registration)
 
 ### Build Status
 - ✅ `go build ./...` - Success
@@ -559,4 +564,4 @@ All P0 items are now functional:
 
 ---
 
-*Last Updated: 2026-04-16 (export + analytics/tab-completion + plugin-install + agent/hooks/find/models + multi-line input + ~48 commands + all 56 tools complete)*
+*Last Updated: 2026-04-16 (env/race-fixes + export + analytics/tab-completion + plugin-install + agent/hooks/find/models + multi-line input + ~49 commands + all 56 tools complete)*
