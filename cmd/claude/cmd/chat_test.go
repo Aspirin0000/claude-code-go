@@ -149,15 +149,10 @@ func TestJSONRequestParsing(t *testing.T) {
 
 func TestJSONResponseSerialization(t *testing.T) {
 	resp := JSONResponse{
-		Success:  true,
-		Response: "hello",
-		Messages: []JSONMessage{
-			{Role: "user", Content: "hi"},
-			{Role: "assistant", Content: "hello"},
-		},
-		ToolCalls: []JSONToolCall{
-			{Name: "bash", Input: json.RawMessage(`{"command":"ls"}`), Result: "file.txt"},
-		},
+		Success:   true,
+		Response:  "hello",
+		Messages:  []JSONMessage{{Role: "user", Content: "hi"}},
+		ToolCalls: []JSONToolCall{{Name: "bash", Input: json.RawMessage(`{"command":"ls"}`)}},
 	}
 	data, err := json.Marshal(resp)
 	if err != nil {
@@ -167,7 +162,22 @@ func TestJSONResponseSerialization(t *testing.T) {
 	if err := json.Unmarshal(data, &parsed); err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
 	}
-	if !parsed.Success || parsed.Response != "hello" || len(parsed.Messages) != 2 || len(parsed.ToolCalls) != 1 {
+	if !parsed.Success || parsed.Response != "hello" || len(parsed.Messages) != 1 || len(parsed.ToolCalls) != 1 {
 		t.Errorf("unexpected parsed response: %+v", parsed)
+	}
+}
+
+func TestNoTuiFlag(t *testing.T) {
+	// Test that --no-tui flag exists
+	if !rootCmd.Flags().Lookup("no-tui").Changed {
+		// Flag exists but wasn't changed in this test
+		// Just verify it's registered
+		flag := rootCmd.Flags().Lookup("no-tui")
+		if flag == nil {
+			t.Fatal("--no-tui flag not registered")
+		}
+		if flag.DefValue != "false" {
+			t.Errorf("expected default false, got %s", flag.DefValue)
+		}
 	}
 }

@@ -35,6 +35,7 @@ var (
 	jsonFlag    bool
 	serveFlag   bool
 	portFlag    string
+	noTuiFlag   bool
 )
 
 func init() {
@@ -45,6 +46,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&jsonFlag, "json", false, "Run in structured JSON mode")
 	rootCmd.Flags().BoolVar(&serveFlag, "serve", false, "Run HTTP server mode")
 	rootCmd.Flags().StringVar(&portFlag, "port", "8080", "HTTP server port (used with --serve)")
+	rootCmd.Flags().BoolVar(&noTuiFlag, "no-tui", false, "Disable TUI and use simple REPL")
 }
 
 // rootCmd represents the base command when called without any subcommands
@@ -95,7 +97,7 @@ func runCLI() error {
 		}
 	}
 
-	if os.Getenv("CLAUDE_TUI") == "1" {
+	if os.Getenv("CLAUDE_TUI") == "1" && !noTuiFlag {
 		return runTUI()
 	}
 	return runSimpleREPL()
